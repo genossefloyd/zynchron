@@ -15,7 +15,7 @@ CXX           = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefau
 DEFINES       = -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_BLUETOOTH_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk -mmacosx-version-min=10.8 -Wall -W -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -stdlib=libc++ -g -std=gnu++11 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk -mmacosx-version-min=10.8 -Wall -W -fPIC $(DEFINES)
-INCPATH       = -I../input -I. -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/OpenGL.framework/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/AGL.framework/Headers -I. -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -F/Applications/Qt/5.7/clang_64/lib
+INCPATH       = -I../input -I. -I../libs/metawear -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/OpenGL.framework/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/AGL.framework/Headers -I. -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -F/Applications/Qt/5.7/clang_64/lib
 QMAKE         = /Applications/Qt/5.7/clang_64/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -36,7 +36,7 @@ DISTNAME      = input1.0.0
 DISTDIR = /Users/Mopple/Documents/Privat/Projekte/zynchron/build-input-Desktop_Qt_5_7_0_clang_64bit-Debug/.tmp/input1.0.0
 LINK          = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
 LFLAGS        = -headerpad_max_install_names -stdlib=libc++ -Wl,-syslibroot,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk -mmacosx-version-min=10.8 -Wl,-rpath,/Applications/Qt/5.7/clang_64/lib
-LIBS          = $(SUBLIBS) -F/Applications/Qt/5.7/clang_64/lib -framework QtWidgets -framework QtGui -framework QtCore -framework DiskArbitration -framework IOKit -framework QtBluetooth -framework OpenGL -framework AGL 
+LIBS          = $(SUBLIBS) -F/Applications/Qt/5.7/clang_64/lib -L/Users/Mopple/Documents/Privat/Projekte/zynchron/input/../libs/metawear/build-metawear-Desktop_Qt_5_7_0_clang_64bit-Debug/ -lmetawear.1.0.0 -framework QtWidgets -framework QtGui -framework QtCore -framework DiskArbitration -framework IOKit -framework QtBluetooth -framework OpenGL -framework AGL 
 AR            = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar cq
 RANLIB        = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib -s
 SED           = sed
@@ -50,13 +50,17 @@ OBJECTS_DIR   = ./
 
 SOURCES       = ../input/main.cpp \
 		../input/maingui.cpp \
-		../input/bluetoothconnector.cpp moc_maingui.cpp \
-		moc_bluetoothconnector.cpp
+		../input/bluetoothconnector.cpp \
+		../input/deviceinfo.cpp moc_maingui.cpp \
+		moc_bluetoothconnector.cpp \
+		moc_deviceinfo.cpp
 OBJECTS       = main.o \
 		maingui.o \
 		bluetoothconnector.o \
+		deviceinfo.o \
 		moc_maingui.o \
-		moc_bluetoothconnector.o
+		moc_bluetoothconnector.o \
+		moc_deviceinfo.o
 DIST          = /Applications/Qt/5.7/clang_64/mkspecs/features/spec_pre.prf \
 		/Applications/Qt/5.7/clang_64/mkspecs/qdevice.pri \
 		/Applications/Qt/5.7/clang_64/mkspecs/features/device_config.prf \
@@ -213,9 +217,11 @@ DIST          = /Applications/Qt/5.7/clang_64/mkspecs/features/spec_pre.prf \
 		/Applications/Qt/5.7/clang_64/mkspecs/features/yacc.prf \
 		/Applications/Qt/5.7/clang_64/mkspecs/features/lex.prf \
 		../input/input.pro ../input/maingui.h \
-		../input/bluetoothconnector.h ../input/main.cpp \
+		../input/bluetoothconnector.h \
+		../input/deviceinfo.h ../input/main.cpp \
 		../input/maingui.cpp \
-		../input/bluetoothconnector.cpp
+		../input/bluetoothconnector.cpp \
+		../input/deviceinfo.cpp
 QMAKE_TARGET  = input
 DESTDIR       = 
 TARGET        = input.app/Contents/MacOS/input
@@ -578,8 +584,8 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents ../input/maingui.h ../input/bluetoothconnector.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../input/main.cpp ../input/maingui.cpp ../input/bluetoothconnector.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../input/maingui.h ../input/bluetoothconnector.h ../input/deviceinfo.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../input/main.cpp ../input/maingui.cpp ../input/bluetoothconnector.cpp ../input/deviceinfo.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../input/maingui.ui $(DISTDIR)/
 
 
@@ -606,27 +612,77 @@ benchmark: first
 
 compiler_rcc_make_all:
 compiler_rcc_clean:
-compiler_moc_header_make_all: moc_maingui.cpp moc_bluetoothconnector.cpp
+compiler_moc_header_make_all: moc_maingui.cpp moc_bluetoothconnector.cpp moc_deviceinfo.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_maingui.cpp moc_bluetoothconnector.cpp
+	-$(DEL_FILE) moc_maingui.cpp moc_bluetoothconnector.cpp moc_deviceinfo.cpp
 moc_maingui.cpp: /Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/QWidget \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/qwidget.h \
+		/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers/QStandardItemModel \
+		/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers/qstandarditemmodel.h \
 		../input/bluetoothconnector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QDebug \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qdebug.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QVector \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qvector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceDiscoveryAgent \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdevicediscoveryagent.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceInfo \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyController \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergycontroller.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyService \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergyservice.h \
+		../libs/metawear/core/metawearboard.h \
+		../libs/metawear/core/metawearboard_fwd.h \
+		../libs/metawear/core/module.h \
+		../libs/metawear/platform/btle_connection.h \
+		../libs/metawear/platform/dllmarker.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h \
 		../input/maingui.h \
 		/Applications/Qt/5.7/clang_64/bin/moc
-	/Applications/Qt/5.7/clang_64/bin/moc $(DEFINES) -D__APPLE__ -D__GNUC__=4 -D__APPLE_CC__ -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -I/Users/Mopple/Documents/Privat/Projekte/zynchron/input -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/7.3.0/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include -I'/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks (framework directory)' -F/Applications/Qt/5.7/clang_64/lib ../input/maingui.h -o moc_maingui.cpp
+	/Applications/Qt/5.7/clang_64/bin/moc $(DEFINES) -D__APPLE__ -D__GNUC__=4 -D__APPLE_CC__ -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -I/Users/Mopple/Documents/Privat/Projekte/zynchron/input -I/Users/Mopple/Documents/Privat/Projekte/zynchron/libs/metawear -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/7.3.0/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include -I'/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks (framework directory)' -F/Applications/Qt/5.7/clang_64/lib ../input/maingui.h -o moc_maingui.cpp
 
 moc_bluetoothconnector.cpp: /Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QDebug \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qdebug.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QVector \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qvector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceDiscoveryAgent \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdevicediscoveryagent.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceInfo \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyController \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergycontroller.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyService \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergyservice.h \
+		../libs/metawear/core/metawearboard.h \
+		../libs/metawear/core/metawearboard_fwd.h \
+		../libs/metawear/core/module.h \
+		../libs/metawear/platform/btle_connection.h \
+		../libs/metawear/platform/dllmarker.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h \
 		../input/bluetoothconnector.h \
 		/Applications/Qt/5.7/clang_64/bin/moc
-	/Applications/Qt/5.7/clang_64/bin/moc $(DEFINES) -D__APPLE__ -D__GNUC__=4 -D__APPLE_CC__ -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -I/Users/Mopple/Documents/Privat/Projekte/zynchron/input -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/7.3.0/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include -I'/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks (framework directory)' -F/Applications/Qt/5.7/clang_64/lib ../input/bluetoothconnector.h -o moc_bluetoothconnector.cpp
+	/Applications/Qt/5.7/clang_64/bin/moc $(DEFINES) -D__APPLE__ -D__GNUC__=4 -D__APPLE_CC__ -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -I/Users/Mopple/Documents/Privat/Projekte/zynchron/input -I/Users/Mopple/Documents/Privat/Projekte/zynchron/libs/metawear -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/7.3.0/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include -I'/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks (framework directory)' -F/Applications/Qt/5.7/clang_64/lib ../input/bluetoothconnector.h -o moc_bluetoothconnector.cpp
+
+moc_deviceinfo.cpp: /Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/bin/moc
+	/Applications/Qt/5.7/clang_64/bin/moc $(DEFINES) -D__APPLE__ -D__GNUC__=4 -D__APPLE_CC__ -I/Applications/Qt/5.7/clang_64/mkspecs/macx-clang -I/Users/Mopple/Documents/Privat/Projekte/zynchron/input -I/Users/Mopple/Documents/Privat/Projekte/zynchron/libs/metawear -I/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers -I/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/7.3.0/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include -I'/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks (framework directory)' -F/Applications/Qt/5.7/clang_64/lib ../input/deviceinfo.h -o moc_deviceinfo.cpp
 
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
@@ -652,11 +708,32 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 main.o: ../input/main.cpp ../input/maingui.h \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/QWidget \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/qwidget.h \
+		/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers/QStandardItemModel \
+		/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers/qstandarditemmodel.h \
 		../input/bluetoothconnector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QDebug \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qdebug.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QVector \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qvector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceDiscoveryAgent \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdevicediscoveryagent.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceInfo \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyController \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergycontroller.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyService \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergyservice.h \
+		../libs/metawear/core/metawearboard.h \
+		../libs/metawear/core/metawearboard_fwd.h \
+		../libs/metawear/core/module.h \
+		../libs/metawear/platform/btle_connection.h \
+		../libs/metawear/platform/dllmarker.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/QApplication \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/qapplication.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../input/main.cpp
@@ -664,29 +741,81 @@ main.o: ../input/main.cpp ../input/maingui.h \
 maingui.o: ../input/maingui.cpp ../input/maingui.h \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/QWidget \
 		/Applications/Qt/5.7/clang_64/lib/QtWidgets.framework/Headers/qwidget.h \
+		/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers/QStandardItemModel \
+		/Applications/Qt/5.7/clang_64/lib/QtGui.framework/Headers/qstandarditemmodel.h \
 		../input/bluetoothconnector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QDebug \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qdebug.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QVector \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qvector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceDiscoveryAgent \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdevicediscoveryagent.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceInfo \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyController \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergycontroller.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyService \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergyservice.h \
+		../libs/metawear/core/metawearboard.h \
+		../libs/metawear/core/metawearboard_fwd.h \
+		../libs/metawear/core/module.h \
+		../libs/metawear/platform/btle_connection.h \
+		../libs/metawear/platform/dllmarker.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h \
 		ui_maingui.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o maingui.o ../input/maingui.cpp
 
 bluetoothconnector.o: ../input/bluetoothconnector.cpp ../input/bluetoothconnector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
 		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QDebug \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qdebug.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QVector \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qvector.h \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceDiscoveryAgent \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdevicediscoveryagent.h \
-		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qdebug.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothDeviceInfo \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyController \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergycontroller.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QLowEnergyService \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qlowenergyservice.h \
+		../libs/metawear/core/metawearboard.h \
+		../libs/metawear/core/metawearboard_fwd.h \
+		../libs/metawear/core/module.h \
+		../libs/metawear/platform/btle_connection.h \
+		../libs/metawear/platform/dllmarker.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/QBluetoothUuid \
 		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothuuid.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bluetoothconnector.o ../input/bluetoothconnector.cpp
+
+deviceinfo.o: ../input/deviceinfo.cpp /Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothuuid.h \
+		../input/deviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QString \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qstring.h \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/QObject \
+		/Applications/Qt/5.7/clang_64/lib/QtCore.framework/Headers/qobject.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothdeviceinfo.h \
+		/Applications/Qt/5.7/clang_64/lib/QtBluetooth.framework/Headers/qbluetoothaddress.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o deviceinfo.o ../input/deviceinfo.cpp
 
 moc_maingui.o: moc_maingui.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_maingui.o moc_maingui.cpp
 
 moc_bluetoothconnector.o: moc_bluetoothconnector.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_bluetoothconnector.o moc_bluetoothconnector.cpp
+
+moc_deviceinfo.o: moc_deviceinfo.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_deviceinfo.o moc_deviceinfo.cpp
 
 ####### Install
 

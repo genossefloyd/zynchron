@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         maingui.cpp \
-    bluetoothconnector.cpp
+        bluetoothconnector.cpp \
+        deviceinfo.cpp
 
 HEADERS  += maingui.h \
-    bluetoothconnector.h
+            bluetoothconnector.h \
+            deviceinfo.h
 
 FORMS    += maingui.ui
 
