@@ -2,6 +2,7 @@
 #include "ui_maingui.h"
 
 #include "deviceinfo.h"
+#include <QBluetoothDeviceInfo>
 
 MainGui::MainGui(QWidget *parent) :
     QWidget(parent),
@@ -25,10 +26,10 @@ void MainGui::updateDeviceList()
 {
     m_deviceListModel->clear();
 
-    QList<DeviceInfo*> devices = connector.getDevices();
+    QList<QBluetoothDeviceInfo*> devices = connector.getDevices();
     for( int i=0; i < devices.size(); i++)
     {
-        m_deviceListModel->appendRow(new QStandardItem(devices[i]->getAddress()));
+        m_deviceListModel->appendRow(new QStandardItem(devices[i]->name()));
     }
 }
 
@@ -39,5 +40,5 @@ void MainGui::on_pushButton_clicked()
 
 void MainGui::on_deviceList_doubleClicked(const QModelIndex &index)
 {
-    connector.connectToService(index.data().toString());
+    connector.connectToDevice(index.row());
 }

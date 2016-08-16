@@ -3,14 +3,15 @@
 
 #include <QBluetoothUuid>
 
+#include "metawearboard.h"
+#include "core/metawearboard.h"
+
 BluetoothConnector::BluetoothConnector(QObject *parent)
     : QObject(parent)
-    , m_currentDevice(QBluetoothDeviceInfo())
-    , foundHeartRateService(false)
+    , m_currentDevice(NULL)
 {
     // Create a discovery agent and connect to its signals
     m_discoveryAgent = new QBluetoothDeviceDiscoveryAgent(this);
-
     connect(m_discoveryAgent, SIGNAL(deviceDiscovered(const QBluetoothDeviceInfo&)),
             this, SLOT(deviceDiscovered(const QBluetoothDeviceInfo&)));
 
@@ -24,9 +25,10 @@ BluetoothConnector::~BluetoothConnector()
 {
     qDeleteAll(m_devices);
     m_devices.clear();
+    m_currentDevice = NULL;
 }
 
-QList<DeviceInfo*> BluetoothConnector::getDevices()
+QList<QBluetoothDeviceInfo*> BluetoothConnector::getDevices()
 {
     return m_devices;
 }
@@ -35,6 +37,8 @@ void BluetoothConnector::startDeviceDiscovery()
 {
     qDeleteAll(m_devices);
     m_devices.clear();
+    m_currentDevice = NULL;
+
     m_discoveryAgent->start();
     qDebug() << "Scanning for devices...";
 }
@@ -51,7 +55,8 @@ void BluetoothConnector::deviceDiscovered(const QBluetoothDeviceInfo &device)
     if (device.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration) {
         qWarning() << "Discovered LE Device name: " << device.name() << " Address: "
                    << device.address().toString();
-        DeviceInfo *dev = new DeviceInfo(device);
+
+        QBluetoothDeviceInfo* dev = new QBluetoothDeviceInfo(device);
         m_devices.append(dev);
         qDebug() << "Low Energy device found. Scanning for more...";
 
@@ -69,93 +74,42 @@ void BluetoothConnector::deviceScanError(QBluetoothDeviceDiscoveryAgent::Error e
         qDebug() << "An unknown error has occurred.";
 }
 
-void BluetoothConnector::connectToService(const QString &address)
+void BluetoothConnector::connectToDevice(const QString &address)
 {
     bool deviceFound = false;
-    for (int i = 0; i < m_devices.size(); i++)
+    for (int index = 0; index < m_devices.size(); index++)
     {
-        if (((DeviceInfo*)m_devices.at(i))->getAddress() == address )
+        if (m_devices.at(index)->address().toString() == address )
         {
-            m_currentDevice.setDevice(((DeviceInfo*)m_devices.at(i))->getDevice());
+            m_currentDevice = m_devices.at(index);
             qDebug() << "Connecting to device...";
             deviceFound = true;
             break;
         }
     }
     // we are running demo mode
-    if (!deviceFound) {
+    if (deviceFound)
+    {
         qDebug() << "No Device found...";
         return;
     }
+    connectToDevice();
+}
 
-    if (m_control)
+void BluetoothConnector::connectToDevice(int index)
+{
+    if( index < 0 || index >= m_devices.size() )
     {
-        m_control->disconnectFromDevice();
-        delete m_control;
-        m_control = 0;
+        qDebug() << "No Device with index " << index << "available.";
+        return;
     }
+    m_currentDevice = m_devices.at(index);
 
-    m_control = new QLowEnergyController(m_currentDevice.getDevice(), this);
-    connect(m_control, SIGNAL(connected()),
-            this, SLOT(deviceConnected()));
-    connect(m_control, SIGNAL(disconnected()),
-            this, SLOT(deviceDisconnected()));
-    connect(m_control, SIGNAL(serviceDiscovered(QBluetoothUuid)),
-            this, SLOT(serviceDiscovered(QBluetoothUuid)));
-    connect(m_control, SIGNAL(discoveryFinished()),
-            this, SLOT(serviceScanDone()));
-    connect(m_control, SIGNAL(error(QLowEnergyController::Error)),
-            this, SLOT(controllerError(QLowEnergyController::Error)));
-
-    m_control->connectToDevice();
+    connectToDevice();
 }
 
-void BluetoothConnector::deviceConnected()
+void BluetoothConnector::connectToDevice()
 {
-    m_control->discoverServices();
-}
-
-void BluetoothConnector::deviceDisconnected()
-{
-    qDebug() << "Heart Rate service disconnected";
-    qWarning() << "Remote device disconnected";
-}
-
-void BluetoothConnector::serviceDiscovered(const QBluetoothUuid &gatt)
-{
-    qDebug() << "Service discovered: " << gatt.toString() << ". Waiting for service scan to be done...";
-    foundHeartRateService = gatt == QBluetoothUuid::HeartRate;
-}
-
-void BluetoothConnector::serviceScanDone()
-{
-    delete m_service;
-    m_service = 0;
-
-    if (foundHeartRateService) {
-        qDebug() << "Connecting to service...";
-        m_service = m_control->createServiceObject(
-                    QBluetoothUuid(QBluetoothUuid::HeartRate), this);
-
-        connect(m_service, SIGNAL(stateChanged(QLowEnergyService::ServiceState)),
-                this, SLOT(serviceStateChanged(QLowEnergyService::ServiceState)));
-
-        m_service->discoverDetails();
-    }
-}
-
-void BluetoothConnector::controllerError(QLowEnergyController::Error error)
-{
-    qDebug() << "Cannot connect to remote device.";
-    qWarning() << "Controller Error:" << error;
-}
-
-void BluetoothConnector::serviceStateChanged(QLowEnergyService::ServiceState s)
-{
-    switch (s)
-    {
-        default:
-            //nothing for now
-            break;
-    }
+    m_board = new metawearboard(this);
+    m_board->init(new QLowEnergyController(*m_currentDevice, this));
 }

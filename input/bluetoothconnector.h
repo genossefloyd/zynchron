@@ -8,11 +8,9 @@
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
 #include <QLowEnergyController>
-#include <QLowEnergyService>
-
-#include "core/metawearboard.h"
 
 #include "deviceinfo.h"
+#include "metawearboard.h"
 
 class BluetoothConnector : public QObject
 {
@@ -23,35 +21,27 @@ public:
     ~BluetoothConnector();
 
     void startDeviceDiscovery();
-    void connectToService(const QString &address);
+    void connectToDevice(const QString &address);
+    void connectToDevice(int index);
 
-    QList<DeviceInfo*> getDevices();
+    QList<QBluetoothDeviceInfo*> getDevices();
 
 private:
+    void connectToDevice();
+
     QBluetoothDeviceDiscoveryAgent *m_discoveryAgent;
-    QList<DeviceInfo*> m_devices;
-    DeviceInfo m_currentDevice;
+    QList<QBluetoothDeviceInfo*> m_devices;
+    QBluetoothDeviceInfo* m_currentDevice;
 
-    QLowEnergyController *m_control;
-    QLowEnergyService *m_service;
+    metawearboard* m_board;
 
-    bool foundHeartRateService;
-
-Q_SIGNALS:
+signals:
     void updated();
 
 private slots:
     void deviceDiscovered(const QBluetoothDeviceInfo &device);
     void deviceScanError(QBluetoothDeviceDiscoveryAgent::Error error);
     void scanFinished();
-
-    void deviceConnected();
-    void deviceDisconnected();
-    void serviceDiscovered(const QBluetoothUuid &);
-    void serviceScanDone();
-    void controllerError(QLowEnergyController::Error);
-
-    void serviceStateChanged(QLowEnergyService::ServiceState s);
 };
 
 #endif // BLUETOOTHCONNECTOR_H

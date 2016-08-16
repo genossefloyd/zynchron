@@ -53,6 +53,11 @@ QBluetoothDeviceInfo DeviceInfo::getDevice() const
     return m_device;
 }
 
+QString DeviceInfo::getName() const
+{
+    return m_device.name();
+}
+
 QString DeviceInfo::getAddress() const
 {
 #ifdef Q_OS_MAC

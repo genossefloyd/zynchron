@@ -15,11 +15,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         maingui.cpp \
         bluetoothconnector.cpp \
-        deviceinfo.cpp
+        deviceinfo.cpp \
+        metawearboard.cpp
 
 HEADERS  += maingui.h \
             bluetoothconnector.h \
-            deviceinfo.h
+            deviceinfo.h \
+            metawearboard.h
 
 FORMS    += maingui.ui
 
