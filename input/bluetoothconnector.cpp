@@ -110,6 +110,7 @@ void BluetoothConnector::connectToDevice(int index)
 
 void BluetoothConnector::connectToDevice()
 {
+    qDebug() << "Connecting to " << m_currentDevice->name();
     m_board = new metawearboard(this);
     m_board->init(new QLowEnergyController(*m_currentDevice, this));
 }

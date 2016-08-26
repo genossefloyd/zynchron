@@ -44,6 +44,7 @@ private:
 signals:
 
 public slots:
+    void setLED();
 
 private slots:
     void deviceConnected();
@@ -56,7 +57,6 @@ private slots:
 
     void updateCharacteristic(QLowEnergyCharacteristic,QByteArray);
     void readCharacteristic(QLowEnergyCharacteristic,QByteArray);
-    void writtenCharacteristic(QLowEnergyCharacteristic,QByteArray);
 
     void confirmedDescriptorWrite(const QLowEnergyDescriptor &d, const QByteArray &value);
     void confirmedDescriptorRead(const QLowEnergyDescriptor &d, const QByteArray &value);
