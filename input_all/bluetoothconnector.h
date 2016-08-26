@@ -10,7 +10,7 @@
 #include <QLowEnergyController>
 
 #include "deviceinfo.h"
-#include "metawearboard.h"
+#include "metaweardevice.h"
 
 class BluetoothConnector : public QObject
 {

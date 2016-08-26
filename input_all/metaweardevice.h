@@ -1,5 +1,5 @@
-#ifndef METAWEARBOARD_H
-#define METAWEARBOARD_H
+#ifndef METAWEARDEVICE_H
+#define METAWEARDEVICE_H
 
 #include <QObject>
 #include <QBluetoothUuid>
@@ -65,4 +65,4 @@ private slots:
 QUuid HighLow2Uuid(const uint64_t high, const uint64_t low);
 void Uuid2HighLow(QUuid uuid, uint64_t &high, uint64_t &low);
 
-#endif // METAWEARBOARD_H
+#endif // METAWEARDEVICE_H

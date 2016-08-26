@@ -1,4 +1,4 @@
-#include "metawearboard.h"
+#include "metaweardevice.h"
 #include "peripheral/led.h"
 #include "core/status.h"
 #include "core/settings.h"

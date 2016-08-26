@@ -3,7 +3,6 @@
 
 #include <QBluetoothUuid>
 
-#include "metawearboard.h"
 #include "core/metawearboard.h"
 
 BluetoothConnector::BluetoothConnector(QObject *parent)

@@ -16,7 +16,7 @@ SOURCES += main.cpp\
         maingui.cpp \
     bluetoothconnector.cpp \
     deviceinfo.cpp \
-    metawearboard.cpp \
+    metaweardevice.cpp \
     core/cpp/datasignal.cpp \
     core/cpp/debug.cpp \
     core/cpp/event.cpp \
@@ -176,6 +176,6 @@ HEADERS  += maingui.h \
     sensor/sensor_common.h \
     sensor/spi.h \
     sensor/switch.h \
-    metawearboard.h
+    metaweardevice.h
 
 FORMS    += maingui.ui
