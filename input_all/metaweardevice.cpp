@@ -1,7 +1,8 @@
 #include "metaweardevice.h"
-#include "peripheral/led.h"
+#include "core/cpp/constant.h"
 #include "core/status.h"
 #include "core/settings.h"
+#include "peripheral/led.h"
 
 #include <sstream>
 #include <string>
@@ -223,7 +224,8 @@ void metaweardevice::serviceStateChanged(QLowEnergyService::ServiceState s)
         }
 
         m_board = mbl_mw_metawearboard_create(&m_connection);
-        mbl_mw_settings_set_connection_parameters(m_board, 10.f, 500.f, 0, 6000);
+        mbl_mw_settings_set_connection_parameters(m_board, 10.f, 100.f, 0, 1000);
+        mbl_mw_metawearboard_initialize(m_board, cb_IsInitialized);
 
         QLowEnergyCharacteristic mwChar = m_mwService->characteristic(METAWARE_CHARACTERISTIC_UUID);
         m_notificationDesc = mwChar.descriptor(QBluetoothUuid::ClientCharacteristicConfiguration);
@@ -283,21 +285,15 @@ void metaweardevice::updateCharacteristic(QLowEnergyCharacteristic gatt, QByteAr
 void metaweardevice::setLED()
 {
     bool isInit = mbl_mw_metawearboard_is_initialized(m_board);
-    qDebug() << "Board is initialised: " << isInit;
-    if(m_board)
+    if(isInit)
     {
-        if(isInit)
-        {
-            MblMwLedPattern pattern;
-            // Load the blink pattern
-            mbl_mw_led_load_preset_pattern(&pattern, MBL_MW_LED_PRESET_BLINK);
-            // Write the blink pattern to the blue channel
-            mbl_mw_led_write_pattern(m_board, &pattern, MBL_MW_LED_COLOR_BLUE);
-            mbl_mw_led_play(m_board);
-        }
-        else
-        {
-            mbl_mw_metawearboard_initialize(m_board, cb_IsInitialized);
-        }
+        MblMwLedPattern pattern;
+        static unsigned int pattern_type = MBL_MW_LED_PRESET_BLINK;
+        pattern_type = (pattern_type+1)%3;
+        // Load the blink pattern
+        mbl_mw_led_load_preset_pattern(&pattern, (MblMwLedPreset)pattern_type);
+        // Write the blink pattern to the blue channel
+        mbl_mw_led_write_pattern(m_board, &pattern, MBL_MW_LED_COLOR_GREEN);
+        mbl_mw_led_play(m_board);
     }
 }
