@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MwDeviceControl</class>
+ <widget class="QWidget" name="MwDeviceControl">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>180</width>
+    <height>49</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="name" stdset="0">
+   <string>UnnamedDevice</string>
+  </property>
+  <widget class="QPushButton" name="button_LED">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>51</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>LED</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="button_fetchData">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>10</y>
+     <width>113</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Fetch Data</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

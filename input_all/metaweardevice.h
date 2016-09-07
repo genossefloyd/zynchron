@@ -1,50 +1,64 @@
 #ifndef METAWEARDEVICE_H
 #define METAWEARDEVICE_H
 
-#include <QObject>
+#include "deviceinfo.h"
 #include <QBluetoothUuid>
 #include <QLowEnergyService>
 #include <QLowEnergyController>
 
 #include "core/metawearboard.h"
+#include "core/cpp/metawearboard_def.h"
+#include "core/data.h"
 
 typedef QMap<QBluetoothUuid,QLowEnergyService*> ServiceMap;
 
-class metaweardevice : public QObject
+class MetaWearDevice : public DeviceInfo
 {
     Q_OBJECT
 public:
-    explicit metaweardevice(QObject *parent = 0);
-    virtual ~metaweardevice();
+    enum Signal {
+        SWITCH,
+        ACCELEROMETER,
+        AMBIENT_LIGHT,
+        GYRO
+    };
 
-    bool init(QLowEnergyController *controller );
+    explicit MetaWearDevice(const QBluetoothDeviceInfo &deviceInfo,
+                            QObject *parent = Q_NULLPTR);
+    virtual ~MetaWearDevice();
 
-    static const QBluetoothUuid METAWARE_SERVICE_UUID;
-    static const QBluetoothUuid METAWARE_CHARACTERISTIC_UUID;
+    bool init();
 
 private:
-    MblMwBtleConnection m_connection;
+    static const MblMwBtleConnection CONNECTION;
 
-    MblMwMetaWearBoard*     m_board;
-    QLowEnergyController*   m_control;
-    QLowEnergyService*      m_mwService;
+    struct MblMwMetaWearBoardCustom : public MblMwMetaWearBoard
+    {
+        QLowEnergyController*       controller;
+        ServiceMap                  services;
+        QLowEnergyService*          mwService;
+        bool                        reconnect;
+        State*                      state;
+    };
 
-    static ServiceMap m_services;
+    MblMwMetaWearBoardCustom*   m_board;
 
-    QLowEnergyDescriptor m_notificationDesc;
+    static MblMwMetaWearBoardCustom* mwbc_create(QLowEnergyController *controller = NULL, State* statePtr = NULL);
+    static void mwbc_disconnect(MblMwMetaWearBoardCustom* board);
 
-    void cleanup();
+    static void is_initialized(MblMwMetaWearBoard *board, int32_t status);
 
     static void write_gatt_char(const void* caller, const MblMwGattChar *characteristic, const uint8_t *value, uint8_t length);
-
     static void read_gatt_char(const void* caller, const MblMwGattChar *characteristic);
 
-    static void cb_IsInitialized(MblMwMetaWearBoard *board, int32_t status);
+    static void handle_data(const MblMwData* data, Signal signal);
+    static void acc_handler(const MblMwData* data) { handle_data(data, Signal::ACCELEROMETER); }
 
 signals:
 
 public slots:
-    void setLED();
+    void toogleLED();
+    void fetchData();
 
 private slots:
     void deviceConnected();

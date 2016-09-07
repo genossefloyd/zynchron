@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui bluetooth
+QT       += core gui bluetooth network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -62,7 +62,9 @@ SOURCES += main.cpp\
     sensor/cpp/multichanneltemperature.cpp \
     sensor/cpp/proximity_tsl2671.cpp \
     sensor/cpp/serialpassthrough.cpp \
-    sensor/cpp/switch.cpp
+    sensor/cpp/switch.cpp \
+    mwdevicecontrol.cpp \
+    socketoutput.cpp
 
 HEADERS  += maingui.h \
     bluetoothconnector.h \
@@ -176,6 +178,10 @@ HEADERS  += maingui.h \
     sensor/sensor_common.h \
     sensor/spi.h \
     sensor/switch.h \
-    metaweardevice.h
+    metaweardevice.h \
+    mwdevicecontrol.h \
+    socketoutput.h \
+    messages.h
 
-FORMS    += maingui.ui
+FORMS    += maingui.ui \
+    mwdevicecontrol.ui

@@ -7,7 +7,6 @@
 
 BluetoothConnector::BluetoothConnector(QObject *parent)
     : QObject(parent)
-    , m_currentDevice(NULL)
 {
     // Create a discovery agent and connect to its signals
     m_discoveryAgent = new QBluetoothDeviceDiscoveryAgent(this);
@@ -24,42 +23,57 @@ BluetoothConnector::~BluetoothConnector()
 {
     qDeleteAll(m_devices);
     m_devices.clear();
-    m_currentDevice = NULL;
 }
 
-QList<QBluetoothDeviceInfo*> BluetoothConnector::getDevices()
+QList<DeviceInfo*> BluetoothConnector::getDevices()
 {
-    return m_devices;
+    return m_devices.values();
 }
 
 void BluetoothConnector::startDeviceDiscovery()
 {
-    qDeleteAll(m_devices);
-    m_devices.clear();
-    m_currentDevice = NULL;
-
     m_discoveryAgent->start();
     qDebug() << "Scanning for devices...";
 }
 
 void BluetoothConnector::scanFinished()
 {
-    if (m_devices.size() == 0)
+    qDebug() << "Scanning finished.";
+    if (m_devices.empty())
+    {
         qDebug() << "No Low Energy devices found";
+    }
+    else
+    {
+        qDebug() << "Connecting to found devices.";
+        QMap<QBluetoothUuid,DeviceInfo*>::iterator dev = m_devices.begin();
+        for( ; dev != m_devices.end(); ++dev )
+        {
+            MetaWearDevice* mwDev = dynamic_cast<MetaWearDevice*>(dev.value());
+            if(mwDev)
+                mwDev->init();
+        }
+    }
 }
 
 // In your local slot, read information about the found devices
 void BluetoothConnector::deviceDiscovered(const QBluetoothDeviceInfo &device)
 {
-    if (device.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration) {
-        qWarning() << "Discovered LE Device name: " << device.name() << " Address: "
-                   << device.address().toString();
+    qWarning() << "Discovered LE Device name: " << device.name() << " UUID: "
+               << device.deviceUuid().toString();
 
-        QBluetoothDeviceInfo* dev = new QBluetoothDeviceInfo(device);
-        m_devices.append(dev);
-        qDebug() << "Low Energy device found. Scanning for more...";
+    //check for unknown BTLE device
+    if ( (device.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration)
+         && ! m_devices.contains(device.deviceUuid()) )
+    {
+        qDebug() << "It is a new device. Add it to the list";
 
+        MetaWearDevice* board = new MetaWearDevice(device, this);
+
+        m_devices[device.deviceUuid()] = board;
         Q_EMIT updated();
+
+        qDebug() << "Scanning for more...";
     }
 }
 
@@ -71,45 +85,4 @@ void BluetoothConnector::deviceScanError(QBluetoothDeviceDiscoveryAgent::Error e
         qDebug() << "Writing or reading from the device resulted in an error.";
     else
         qDebug() << "An unknown error has occurred.";
-}
-
-void BluetoothConnector::connectToDevice(const QString &address)
-{
-    bool deviceFound = false;
-    for (int index = 0; index < m_devices.size(); index++)
-    {
-        if (m_devices.at(index)->address().toString() == address )
-        {
-            m_currentDevice = m_devices.at(index);
-            qDebug() << "Connecting to device...";
-            deviceFound = true;
-            break;
-        }
-    }
-    // we are running demo mode
-    if (deviceFound)
-    {
-        qDebug() << "No Device found...";
-        return;
-    }
-    connectToDevice();
-}
-
-void BluetoothConnector::connectToDevice(int index)
-{
-    if( index < 0 || index >= m_devices.size() )
-    {
-        qDebug() << "No Device with index " << index << "available.";
-        return;
-    }
-    m_currentDevice = m_devices.at(index);
-
-    connectToDevice();
-}
-
-void BluetoothConnector::connectToDevice()
-{
-    qDebug() << "Connecting to " << m_currentDevice->name();
-    m_board = new metaweardevice(this);
-    m_board->init(new QLowEnergyController(*m_currentDevice, this));
 }

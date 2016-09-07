@@ -43,8 +43,10 @@
 
 #include "deviceinfo.h"
 
-DeviceInfo::DeviceInfo(const QBluetoothDeviceInfo &info):
-    QObject(), m_device(info)
+DeviceInfo::DeviceInfo(const QBluetoothDeviceInfo &info, QObject *parent)
+    : QObject(parent)
+    , m_device(info)
+    , m_state(Disconnected)
 {
 }
 
@@ -66,10 +68,4 @@ QString DeviceInfo::getAddress() const
 #else
     return m_device.address().toString();
 #endif
-}
-
-void DeviceInfo::setDevice(const QBluetoothDeviceInfo &device)
-{
-    m_device = device;
-    emit deviceChanged();
 }

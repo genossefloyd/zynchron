@@ -44,26 +44,38 @@
 
 #include <QString>
 #include <QObject>
-#include <qbluetoothdeviceinfo.h>
-#include <qbluetoothaddress.h>
+#include <QBluetoothDeviceInfo>
+#include <QBluetoothAddress>
 
 class DeviceInfo: public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString deviceName READ getName NOTIFY deviceChanged)
     Q_PROPERTY(QString deviceAddress READ getAddress NOTIFY deviceChanged)
+
 public:
-    DeviceInfo(const QBluetoothDeviceInfo &device);
-    void setDevice(const QBluetoothDeviceInfo &device);
+    enum State
+    {
+        Disconnected,
+        Connecting,
+        Connected
+    };
+
+    DeviceInfo(const QBluetoothDeviceInfo &device, QObject *parent = Q_NULLPTR);
     QString getName() const ;
     QString getAddress() const;
     QBluetoothDeviceInfo getDevice() const;
+
+    State getState() const { return m_state; }
 
 signals:
     void deviceChanged();
 
 private:
     QBluetoothDeviceInfo m_device;
+
+protected:
+    State m_state;
 };
 
 #endif // DEVICEINFO_H

@@ -1,13 +1,12 @@
 #ifndef BLUETOOTHCONNECTOR_H
 #define BLUETOOTHCONNECTOR_H
 
-#include <QObject>
-#include <QDebug>
-#include <QString>
-#include <QVector>
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
 #include <QLowEnergyController>
+#include <QObject>
+#include <QDebug>
+#include <QString>
 
 #include "deviceinfo.h"
 #include "metaweardevice.h"
@@ -21,19 +20,14 @@ public:
     ~BluetoothConnector();
 
     void startDeviceDiscovery();
-    void connectToDevice(const QString &address);
-    void connectToDevice(int index);
 
-    QList<QBluetoothDeviceInfo*> getDevices();
+    QList<DeviceInfo*> getDevices();
 
 private:
     void connectToDevice();
 
-    QBluetoothDeviceDiscoveryAgent *m_discoveryAgent;
-    QList<QBluetoothDeviceInfo*> m_devices;
-    QBluetoothDeviceInfo* m_currentDevice;
-
-    metaweardevice* m_board;
+    QBluetoothDeviceDiscoveryAgent* m_discoveryAgent;
+    QMap<QBluetoothUuid,DeviceInfo*> m_devices;
 
 signals:
     void updated();

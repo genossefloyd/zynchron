@@ -1,8 +1,14 @@
 #include "maingui.h"
 #include "ui_maingui.h"
-
+#include "socketoutput.h"
 #include "deviceinfo.h"
+#include "mwdevicecontrol.h"
+
 #include <QBluetoothDeviceInfo>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
 
 MainGui::MainGui(QWidget *parent) :
     QWidget(parent),
@@ -11,41 +17,69 @@ MainGui::MainGui(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    m_deviceListModel = new QStandardItemModel( 0, 1, this );
-    ui->deviceList->setModel(m_deviceListModel);
+    connect(this, SIGNAL(output_added(QString)), this, SLOT(on_output_added(QString)));
+    //qInstallMessageHandler(messageOutputGUI);
 
+    connect(this, SIGNAL(clicked_SendDummyData()), SocketOutput::instance(), SLOT(toogleDummy()));
     connect(&m_connector, SIGNAL(updated()), this, SLOT(updateDeviceList()));
 }
 
 MainGui::~MainGui()
 {
-    delete m_deviceListModel;
     delete ui;
 }
 
 void MainGui::updateDeviceList()
 {
-    m_deviceListModel->clear();
-
-    QList<QBluetoothDeviceInfo*> devices = m_connector.getDevices();
-    for( int i=0; i < devices.size(); i++)
-    {
-        m_deviceListModel->appendRow(new QStandardItem(devices[i]->name()));
-    }
 }
 
-void MainGui::on_pushButton_clicked()
+void MainGui::on_butten_Search_clicked()
 {
     m_connector.startDeviceDiscovery();
-}
-
-void MainGui::on_deviceList_doubleClicked(const QModelIndex &index)
-{
-    ui->deviceList->setDisabled(true);
-    m_connector.connectToDevice(index.row());
 }
 
 void MainGui::on_button_LED_clicked()
 {
     emit clicked_LED();
+}
+
+void MainGui::on_button_Data_clicked()
+{
+    emit clicked_FetchData();
+}
+
+void MainGui::on_button_dummyData_clicked()
+{
+    emit clicked_SendDummyData();
+}
+
+void MainGui::messageOutputGUI(QtMsgType type, const QMessageLogContext &/*context*/, const QString &msg)
+{
+    QString msgType;
+    switch (type)
+    {
+    case QtDebugMsg:
+        msgType = "";
+        break;
+    case QtInfoMsg:
+        msgType = "Info: ";
+        break;
+    case QtWarningMsg:
+        msgType = "Warning: ";
+        break;
+    case QtCriticalMsg:
+        msgType = "Critical: ";
+        break;
+    case QtFatalMsg:
+        msgType = "Fatal: ";
+        break;
+    }
+
+    //emit gui->output_added(msg);
+    std::cout << msgType.toStdString() << msg.toStdString();
+}
+
+void MainGui::on_output_added(QString msg)
+{
+    ui->textBrowser->append(msg);
 }
