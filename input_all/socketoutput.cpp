@@ -16,9 +16,18 @@ SocketOutput* SocketOutput::instance()
 
 SocketOutput::SocketOutput(QObject *parent)
     : QObject(parent)
+    , m_socket(NULL)
+    , m_server(new QTcpServer(this))
     , m_dummyThread(NULL)
 {
-    m_socket = new QUdpSocket(this);
+    m_server->listen(QHostAddress::LocalHost, 54345);
+    connect(m_server, SIGNAL(newConnection()), this, SLOT(connected()));
+}
+
+void SocketOutput::connected()
+{
+    m_socket = m_server->nextPendingConnection();
+    qDebug() << "SocketOutput is connected to " << m_socket->peerAddress();
 }
 
 void SocketOutput::toogleDummy()
@@ -35,7 +44,9 @@ void SocketOutput::startDummy()
         stopDummy();
 
     m_dummyThread = new DummyDataSource();
-    connect(m_dummyThread, SIGNAL(finished), this, SLOT(stopDummy));
+
+    connect(m_dummyThread, SIGNAL(finished()), this, SLOT(stopDummy()));
+    connect(m_dummyThread, SIGNAL(send(char,char,QByteArray)), this, SLOT(sendData(char,char,QByteArray)));
     m_dummyThread->start();
 }
 
@@ -50,12 +61,12 @@ void SocketOutput::stopDummy()
     }
 }
 
-bool SocketOutput::sendData(char deviceID, char tag, const QByteArray& payload)
+void SocketOutput::sendData(char deviceID, char tag, const QByteArray& payload)
 {
     if(payload.size() > 255)
     {
         qWarning() << "trying to send a package of " << payload.size() << "bytes";
-        return false;
+        return;
     }
     char length = (char)payload.size();
 
@@ -65,17 +76,17 @@ bool SocketOutput::sendData(char deviceID, char tag, const QByteArray& payload)
     data.append(length);
     data.append(payload);
 
-    qDebug() << "sending: " << data.toHex();
-    return -1 != m_socket->writeDatagram(data.data(), data.size(), QHostAddress::Broadcast, 54345);
+    if(m_socket && m_socket->state() == QAbstractSocket::ConnectedState)
+    {
+        qDebug() << "sending: " << data.toHex();
+        if( -1 == m_socket->write(data) )
+            qWarning() << "Failed to send data to " << m_socket->peerAddress();
+    }
 }
 
 void DummyDataSource::run()
 {
     keepRunning = true;
-
-    SocketOutput* out = SocketOutput::instance();
-    if( NULL == out )
-        return;
 
     float x = 0.0f, y = 1.57f, z = 3.14f;
     int len = sizeof(float);
@@ -90,10 +101,11 @@ void DummyDataSource::run()
         value = qSin(z);
         dummyData.append((char*)&value,len);
 
-        out->sendData(0x01, (char) msg::ACCELEROMETER, dummyData);
+        emit send(0x01, (char) msg::ACCELEROMETER, dummyData);
         dummyData.clear();
         x+=0.1f;
         y+=0.1f;
         z+=0.1f;
+        QThread::msleep(100);
     }
 }

@@ -66,7 +66,7 @@ MetaWearDevice::MetaWearDevice(const QBluetoothDeviceInfo &deviceInfo, QObject *
     : DeviceInfo(deviceInfo, parent)
     , m_board(NULL)
 {
-    m_board = mwbc_create( QLowEnergyController::createCentral(deviceInfo, this), &m_state );
+    m_board = mwbc_create( this, QLowEnergyController::createCentral(deviceInfo, this), &m_state );
 }
 
 MetaWearDevice::~MetaWearDevice()
@@ -81,7 +81,7 @@ MetaWearDevice::~MetaWearDevice()
     m_board = NULL;
 }
 
-MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(QLowEnergyController* controller, State* statePtr)
+MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(MetaWearDevice* parent, QLowEnergyController* controller, State* statePtr)
 {
     MblMwMetaWearBoardCustom* board = new MblMwMetaWearBoardCustom();
     memcpy(&board->btle_conn, &CONNECTION, sizeof(MblMwBtleConnection));
@@ -89,6 +89,7 @@ MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(QLowEnergy
     board->reconnect = true;
     board->mwService = NULL;
     board->state = statePtr;
+    board->parent = parent;
     return board;
 }
 
@@ -213,7 +214,7 @@ void MetaWearDevice::deviceDisconnected()
         QLowEnergyController* controller = m_board->controller;
         mbl_mw_metawearboard_free(m_board);
 
-        m_board = mwbc_create(controller, &m_state);
+        m_board = mwbc_create(this, controller, &m_state);
         m_board->reconnect = false;
 
         controller->connectToDevice();
@@ -388,19 +389,22 @@ static int32_t check_acc_type(MblMwMetaWearBoard* board)
 
 void MetaWearDevice::fetchData()
 {
-    if( mbl_mw_metawearboard_is_initialized(m_board) )
+    static bool isStarted = false;
+    if( !isStarted && mbl_mw_metawearboard_is_initialized(m_board) )
     {
+        isStarted = true;
+        connect(this,SIGNAL(newData(char,char,QByteArray)),SocketOutput::instance(),SLOT(sendData(char,char,QByteArray)));
+
         //enable acc sampling
         check_acc_type(m_board);
         auto acc_signal= mbl_mw_acc_get_acceleration_data_signal(m_board);
-        mbl_mw_datasignal_subscribe(acc_signal, acc_handler);
+        mbl_mw_datasignal_subscribe(acc_signal,  acc_handler);
         mbl_mw_acc_enable_acceleration_sampling(m_board);
         mbl_mw_acc_start(m_board);
     }
 }
 
-static SocketOutput* out = SocketOutput::instance();
-void MetaWearDevice::handle_data(const MblMwData* data, Signal signal)
+void MetaWearDevice::handle_data(const MblMwMetaWearBoardCustom* board, const MblMwData* data, Signal signal)
 {
     QByteArray qdata;
     float value;
@@ -421,7 +425,8 @@ void MetaWearDevice::handle_data(const MblMwData* data, Signal signal)
         value = ((MblMwCartesianFloat*)data->value)->z;
         qdata.append((char*)&value,len);
 
-        out->sendData(0x01,msg::ACCELEROMETER,qdata);
+        if(board->parent)
+            emit board->parent->newData(0x01,msg::ACCELEROMETER,qdata);
         break;
     default:
         break;

@@ -34,4 +34,4 @@ typedef struct {
  * Definition for callback functions that handle data from an MblMwDataSignal
  * @param data          Data returned from the signal
  */
-typedef void (*MblMwFnData)(const MblMwData* data);
+typedef void (*MblMwFnData)(const void* caller, const MblMwData* data);

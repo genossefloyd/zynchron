@@ -34,6 +34,7 @@ private:
 
     struct MblMwMetaWearBoardCustom : public MblMwMetaWearBoard
     {
+        MetaWearDevice*             parent;
         QLowEnergyController*       controller;
         ServiceMap                  services;
         QLowEnergyService*          mwService;
@@ -43,7 +44,7 @@ private:
 
     MblMwMetaWearBoardCustom*   m_board;
 
-    static MblMwMetaWearBoardCustom* mwbc_create(QLowEnergyController *controller = NULL, State* statePtr = NULL);
+    static MblMwMetaWearBoardCustom* mwbc_create(MetaWearDevice* parent, QLowEnergyController *controller = NULL, State* statePtr = NULL);
     static void mwbc_disconnect(MblMwMetaWearBoardCustom* board);
 
     static void is_initialized(MblMwMetaWearBoard *board, int32_t status);
@@ -51,10 +52,14 @@ private:
     static void write_gatt_char(const void* caller, const MblMwGattChar *characteristic, const uint8_t *value, uint8_t length);
     static void read_gatt_char(const void* caller, const MblMwGattChar *characteristic);
 
-    static void handle_data(const MblMwData* data, Signal signal);
-    static void acc_handler(const MblMwData* data) { handle_data(data, Signal::ACCELEROMETER); }
+    static void handle_data(const MblMwMetaWearBoardCustom* caller, const MblMwData* data, Signal signal);
+    static void acc_handler(const void* caller, const MblMwData* data)
+    {
+        handle_data((MblMwMetaWearBoardCustom*)caller, data, Signal::ACCELEROMETER);
+    }
 
 signals:
+    bool newData(char deviceID, char tag, const QByteArray& payload);
 
 public slots:
     void toogleLED();

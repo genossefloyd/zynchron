@@ -74,7 +74,7 @@ static inline int32_t forward_response(const ResponseHeader& header, MblMwMetaWe
         MblMwData* data = data_response_converters.at(signal->interpreter)(board, response, len);
         data->epoch= duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
-        signal->handler(data);
+        signal->handler(board, data);
 
         free(data->value);
         free(data);
@@ -105,7 +105,7 @@ int32_t response_handler_packed_data(MblMwMetaWearBoard *board, const uint8_t *r
             MblMwData* data = data_response_converters.at(signal->interpreter)(board, response + i, len - i);
             data->epoch= duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
-            signal->handler(data);
+            signal->handler(board,data);
 
             free(data->value);
             free(data);
@@ -197,7 +197,7 @@ const vector<MblMwGattChar> BOARD_DEV_INFO_CHARS = {
 
 const uint8_t SERIALIZATION_FORMAT = 0;
 
-MblMwMetaWearBoard::MblMwMetaWearBoard() : logger_state(nullptr, [](void *ptr) -> void { tear_down_logging(ptr, false); }), 
+MblMwMetaWearBoard::MblMwMetaWearBoard() : logger_state(nullptr, [](void *ptr) -> void { tear_down_logging(ptr, false); }),
         timer_state(nullptr, [](void *ptr) -> void { free_timer_module(ptr); }),
         event_state(nullptr, [](void *ptr) -> void { free_event_module(ptr); }), 
         dp_state(nullptr, [](void *ptr) -> void { free_dataprocessor_module(ptr); }),

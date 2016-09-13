@@ -108,12 +108,24 @@
     </layout>
    </item>
    <item>
-    <widget class="QTextBrowser" name="textBrowser">
+    <widget class="QTextEdit" name="output">
      <property name="minimumSize">
       <size>
        <width>100</width>
        <height>100</height>
       </size>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="undoRedoEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="lineWrapMode">
+      <enum>QTextEdit::NoWrap</enum>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

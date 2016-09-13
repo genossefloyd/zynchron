@@ -4,54 +4,11 @@
 #include "deviceinfo.h"
 #include "mwdevicecontrol.h"
 
-#include <QBluetoothDeviceInfo>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 
-MainGui::MainGui(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::MainGui),
-    m_connector(this)
-{
-    ui->setupUi(this);
-
-    connect(this, SIGNAL(output_added(QString)), this, SLOT(on_output_added(QString)));
-    //qInstallMessageHandler(messageOutputGUI);
-
-    connect(this, SIGNAL(clicked_SendDummyData()), SocketOutput::instance(), SLOT(toogleDummy()));
-    connect(&m_connector, SIGNAL(updated()), this, SLOT(updateDeviceList()));
-}
-
-MainGui::~MainGui()
-{
-    delete ui;
-}
-
-void MainGui::updateDeviceList()
-{
-}
-
-void MainGui::on_butten_Search_clicked()
-{
-    m_connector.startDeviceDiscovery();
-}
-
-void MainGui::on_button_LED_clicked()
-{
-    emit clicked_LED();
-}
-
-void MainGui::on_button_Data_clicked()
-{
-    emit clicked_FetchData();
-}
-
-void MainGui::on_button_dummyData_clicked()
-{
-    emit clicked_SendDummyData();
-}
+static MainGui* gui = NULL;
 
 void MainGui::messageOutputGUI(QtMsgType type, const QMessageLogContext &/*context*/, const QString &msg)
 {
@@ -75,11 +32,57 @@ void MainGui::messageOutputGUI(QtMsgType type, const QMessageLogContext &/*conte
         break;
     }
 
-    //emit gui->output_added(msg);
-    std::cout << msgType.toStdString() << msg.toStdString();
+    std::cout << msg.toStdString() << std::endl;
+    if(gui)
+        emit gui->received_output(msgType+msg);
 }
 
-void MainGui::on_output_added(QString msg)
+MainGui::MainGui(QWidget *parent) :
+    QWidget(parent),
+    m_ui(new Ui::MainGui),
+    m_connector(this)
 {
-    ui->textBrowser->append(msg);
+    m_ui->setupUi(this);
+
+    connect(this, SIGNAL(clicked_SendDummyData()), SocketOutput::instance(), SLOT(toogleDummy()));
+    connect(&m_connector, SIGNAL(updated()), this, SLOT(updateDeviceList()));
+
+    gui = this;
+    connect(this, SIGNAL(received_output(QString)), this, SLOT(addLogOutput(QString)));
+    qInstallMessageHandler(messageOutputGUI);
+}
+
+MainGui::~MainGui()
+{
+    gui = NULL;
+    delete m_ui;
+}
+
+void MainGui::updateDeviceList()
+{
+}
+
+void MainGui::addLogOutput(QString msg)
+{
+    m_ui->output->append(msg);
+}
+
+void MainGui::on_butten_Search_clicked()
+{
+    m_connector.startDeviceDiscovery();
+}
+
+void MainGui::on_button_LED_clicked()
+{
+    emit clicked_LED();
+}
+
+void MainGui::on_button_Data_clicked()
+{
+    emit clicked_FetchData();
+}
+
+void MainGui::on_button_dummyData_clicked()
+{
+    emit clicked_SendDummyData();
 }

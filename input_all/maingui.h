@@ -3,7 +3,6 @@
 
 #include <QtGlobal>
 #include <QWidget>
-#include <QMutex>
 
 #include "bluetoothconnector.h"
 
@@ -20,29 +19,26 @@ public:
     ~MainGui();
 
 private:
-    Ui::MainGui *ui;
+    Ui::MainGui* m_ui;
     BluetoothConnector m_connector;
 
-    //static QTextBrowser* output;
-    //static QMutex m_outputMutex;
-
-    static void messageOutputGUI(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+    static void messageOutputGUI(QtMsgType type, const QMessageLogContext &/*context*/, const QString &msg);
 
 signals:
     void clicked_LED();
     void clicked_FetchData();
     void clicked_SendDummyData();
-    void output_added(QString msg);
+    void received_output(QString msg);
 
 public slots:
     void updateDeviceList();
+    void addLogOutput(QString msg);
 
 private slots:
     void on_butten_Search_clicked();
     void on_button_LED_clicked();
     void on_button_Data_clicked();
     void on_button_dummyData_clicked();
-    void on_output_added(QString msg);
 };
 
 #endif // MAINGUI_H

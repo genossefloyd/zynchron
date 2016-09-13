@@ -287,9 +287,9 @@ void MblMwDataLogger::process_log_data(const MblMwMetaWearBoard* board, uint8_t 
         data->epoch= epoch;
 
         if (data_handler != nullptr) {
-            data_handler(data);
+            data_handler(board,data);
         } else if (board->log_download_handler.received_unhandled_entry != nullptr) {
-            board->log_download_handler.received_unhandled_entry(data);
+            board->log_download_handler.received_unhandled_entry(board,data);
         }
 
         free(data->value);

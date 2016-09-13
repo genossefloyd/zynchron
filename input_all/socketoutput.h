@@ -2,14 +2,18 @@
 #define SOCKETOUTPUT_H
 
 #include <QObject>
-#include <QUdpSocket>
+#include <QTcpSocket>
+#include <QTcpServer>
 #include <QThread>
 
 class DummyDataSource : public QThread
 {
+    Q_OBJECT
     void run() Q_DECL_OVERRIDE;
 public:
     bool keepRunning;
+signals:
+    void send(char deviceID, char tag, const QByteArray& payload);
 };
 
 class SocketOutput : public QObject
@@ -18,21 +22,21 @@ class SocketOutput : public QObject
 
 private:
     explicit SocketOutput(QObject *parent = 0);
-    QUdpSocket *m_socket;
+    QTcpSocket *m_socket;
+    QTcpServer *m_server;
+    DummyDataSource *m_dummyThread;
 
 public:
     static SocketOutput* instance();
-    bool sendData(char deviceID, char tag, const QByteArray& payload);
-
-signals:
 
 public slots:
+    void connected();
+    void sendData(char deviceID, char tag, const QByteArray& payload);
     void toogleDummy();
+
 private slots:
     void startDummy();
     void stopDummy();
-private:
-    DummyDataSource *m_dummyThread;
 };
 
 #endif // SOCKETOUTPUT_H
