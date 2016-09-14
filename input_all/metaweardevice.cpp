@@ -62,11 +62,36 @@ void Uuid2HighLow(QUuid uuid, uint64_t &high, uint64_t &low)
     sscanf(c2.c_str(), "%llx", &low);
 }
 
+static int32_t check_acc_type(MblMwMetaWearBoard* board)
+{
+    auto acc_type = mbl_mw_metawearboard_lookup_module(board, MBL_MW_MODULE_ACCELEROMETER);
+    switch(acc_type)
+    {
+    case MBL_MW_MODULE_TYPE_NA:
+        // should never reach this case statement
+        qDebug() << "No accelerometer on this board";
+        break;
+    case MBL_MW_MODULE_ACC_TYPE_MMA8452Q:
+        qDebug() << "Acc Type = MMA8452Q";
+        break;
+    case MBL_MW_MODULE_ACC_TYPE_BMI160:
+        qDebug() << "Acc Type = BMI160";
+        break;
+    case MBL_MW_MODULE_ACC_TYPE_BMA255:
+        qDebug() << "Acc Type = BMA255";
+        break;
+    default:
+        qDebug() << "Unknown type";
+        break;
+    }
+    return acc_type;
+}
+
 MetaWearDevice::MetaWearDevice(const QBluetoothDeviceInfo &deviceInfo, QObject *parent)
     : DeviceInfo(deviceInfo, parent)
     , m_board(NULL)
 {
-    m_board = mwbc_create( this, QLowEnergyController::createCentral(deviceInfo, this), &m_state );
+    m_board = mwbc_create( this, QLowEnergyController::createCentral(deviceInfo, this) );
 }
 
 MetaWearDevice::~MetaWearDevice()
@@ -81,15 +106,16 @@ MetaWearDevice::~MetaWearDevice()
     m_board = NULL;
 }
 
-MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(MetaWearDevice* parent, QLowEnergyController* controller, State* statePtr)
+MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(MetaWearDevice* parent, QLowEnergyController* controller)
 {
     MblMwMetaWearBoardCustom* board = new MblMwMetaWearBoardCustom();
     memcpy(&board->btle_conn, &CONNECTION, sizeof(MblMwBtleConnection));
-    board->controller = controller;
-    board->reconnect = true;
-    board->mwService = NULL;
-    board->state = statePtr;
     board->parent = parent;
+    board->controller = controller;
+    board->mwService = NULL;
+    board->datastreamid = parent->m_device.deviceUuid().data1 >> 24;
+    board->fetchingdata = false;
+    board->reconnect = true;
     return board;
 }
 
@@ -100,8 +126,7 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
 
     if(status != MBL_MW_STATUS_ERROR_TIMEOUT)
     {
-        if(board->state)
-            *(board->state) = Connected;
+        board->parent->m_state = Connected;
 
         MblMwLedPattern pattern;
         mbl_mw_led_load_preset_pattern(&pattern, MBL_MW_LED_PRESET_BLINK);
@@ -114,6 +139,14 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
         }
         mbl_mw_led_write_pattern(board, &pattern, color);
         mbl_mw_led_play(board);
+
+        //setup data output connection
+        connect(board->parent,SIGNAL(newData(char,char,QByteArray)),SocketOutput::instance(),SLOT(sendData(char,char,QByteArray)));
+
+        //setup acc sampling
+        check_acc_type(board);
+        auto acc_signal = mbl_mw_acc_get_acceleration_data_signal(board);
+        mbl_mw_datasignal_subscribe(acc_signal, acc_handler);
     }
     else
     {
@@ -139,8 +172,8 @@ void MetaWearDevice::mwbc_disconnect(MblMwMetaWearBoardCustom *board)
 
     mbl_mw_metawearboard_tear_down(board);
     board->controller->disconnectFromDevice();
-    if(board->state)
-        *(board->state) = Disconnected;
+    if(board->parent->m_state)
+        board->parent->m_state = Disconnected;
 }
 
 void MetaWearDevice::write_gatt_char(const void* caller, const MblMwGattChar *characteristic,
@@ -214,7 +247,7 @@ void MetaWearDevice::deviceDisconnected()
         QLowEnergyController* controller = m_board->controller;
         mbl_mw_metawearboard_free(m_board);
 
-        m_board = mwbc_create(this, controller, &m_state);
+        m_board = mwbc_create(this, controller);
         m_board->reconnect = false;
 
         controller->connectToDevice();
@@ -305,14 +338,14 @@ void MetaWearDevice::serviceStateChanged(QLowEnergyService::ServiceState s)
     }
 }
 
-void MetaWearDevice::confirmedDescriptorWrite(const QLowEnergyDescriptor &d, const QByteArray &value)
+void MetaWearDevice::confirmedDescriptorWrite(const QLowEnergyDescriptor&, const QByteArray&)
 {
-    qDebug() << "confirmedDescriptorWrite " << d.name() << " - value: " << value.toHex();
+    //qDebug() << "confirmedDescriptorWrite " << d.name() << " - value: " << value.toHex();
 }
 
 void MetaWearDevice::confirmedDescriptorRead(const QLowEnergyDescriptor &d, const QByteArray &value)
 {
-    qDebug() << "confirmedDescriptorRead " << d.name() << " - value: " << value.toHex();
+    //qDebug() << "confirmedDescriptorRead " << d.name() << " - value: " << value.toHex();
     if(d.isValid())
     {
         uint8_t* data = (uint8_t*)value.data();
@@ -323,7 +356,7 @@ void MetaWearDevice::confirmedDescriptorRead(const QLowEnergyDescriptor &d, cons
 
 void MetaWearDevice::readCharacteristic(QLowEnergyCharacteristic gatt,QByteArray value)
 {
-    qDebug() << "readCharacteristic "  << gatt.uuid().toString() << " - value:" << value.toHex();
+    //qDebug() << "readCharacteristic "  << gatt.uuid().toString() << " - value:" << value.toHex();
     uint8_t* data = (uint8_t*)value.data();
     uint8_t size = value.size();
 
@@ -334,7 +367,7 @@ void MetaWearDevice::readCharacteristic(QLowEnergyCharacteristic gatt,QByteArray
 
 void MetaWearDevice::updateCharacteristic(QLowEnergyCharacteristic gatt, QByteArray value)
 {
-    qDebug() << "updateCharacteristic " << gatt.uuid().toString() << " - value:" << value.toHex();
+    //qDebug() << "updateCharacteristic " << gatt.uuid().toString() << " - value:" << value.toHex();
 
     if(gatt.uuid() == METAWARE_CHARACTERISTIC_UUID)
     {
@@ -355,6 +388,7 @@ void MetaWearDevice::toogleLED()
         MblMwLedPattern pattern;
         mbl_mw_led_load_preset_pattern(&pattern, MBL_MW_LED_PRESET_SOLID);
         mbl_mw_led_write_pattern(m_board, &pattern, MBL_MW_LED_COLOR_GREEN);
+        pattern.repeat_count = 0;
         if(isOn)
             mbl_mw_led_stop(m_board);
         else
@@ -362,45 +396,24 @@ void MetaWearDevice::toogleLED()
     }
 }
 
-static int32_t check_acc_type(MblMwMetaWearBoard* board)
-{
-    auto acc_type= mbl_mw_metawearboard_lookup_module(board, MBL_MW_MODULE_ACCELEROMETER);
-    switch(acc_type)
-    {
-    case MBL_MW_MODULE_TYPE_NA:
-        // should never reach this case statement
-        qDebug() << "No accelerometer on this board";
-        break;
-    case MBL_MW_MODULE_ACC_TYPE_MMA8452Q:
-        qDebug() << "Acc Type = MMA8452Q";
-        break;
-    case MBL_MW_MODULE_ACC_TYPE_BMI160:
-        qDebug() << "Acc Type = BMI160";
-        break;
-    case MBL_MW_MODULE_ACC_TYPE_BMA255:
-        qDebug() << "Acc Type = BMA255";
-        break;
-    default:
-        qDebug() << "Unknown type";
-        break;
-    }
-    return acc_type;
-}
-
 void MetaWearDevice::fetchData()
 {
-    static bool isStarted = false;
-    if( !isStarted && mbl_mw_metawearboard_is_initialized(m_board) )
+    if( mbl_mw_metawearboard_is_initialized(m_board) )
     {
-        isStarted = true;
-        connect(this,SIGNAL(newData(char,char,QByteArray)),SocketOutput::instance(),SLOT(sendData(char,char,QByteArray)));
-
-        //enable acc sampling
-        check_acc_type(m_board);
-        auto acc_signal= mbl_mw_acc_get_acceleration_data_signal(m_board);
-        mbl_mw_datasignal_subscribe(acc_signal,  acc_handler);
-        mbl_mw_acc_enable_acceleration_sampling(m_board);
-        mbl_mw_acc_start(m_board);
+        if( !m_board->fetchingdata )
+        {
+            m_board->fetchingdata = true;
+            //enable acc sampling
+            mbl_mw_acc_enable_acceleration_sampling(m_board);
+            mbl_mw_acc_start(m_board);
+        }
+        else
+        {
+            m_board->fetchingdata = false;
+            //enable acc sampling
+            mbl_mw_acc_disable_acceleration_sampling(m_board);
+            mbl_mw_acc_stop(m_board);
+        }
     }
 }
 
@@ -426,7 +439,7 @@ void MetaWearDevice::handle_data(const MblMwMetaWearBoardCustom* board, const Mb
         qdata.append((char*)&value,len);
 
         if(board->parent)
-            emit board->parent->newData(0x01,msg::ACCELEROMETER,qdata);
+            emit board->parent->newData(board->datastreamid,msg::ACCELEROMETER,qdata);
         break;
     default:
         break;

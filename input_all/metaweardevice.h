@@ -38,13 +38,14 @@ private:
         QLowEnergyController*       controller;
         ServiceMap                  services;
         QLowEnergyService*          mwService;
+        uint8_t                     datastreamid;
         bool                        reconnect;
-        State*                      state;
+        bool                        fetchingdata;
     };
 
     MblMwMetaWearBoardCustom*   m_board;
 
-    static MblMwMetaWearBoardCustom* mwbc_create(MetaWearDevice* parent, QLowEnergyController *controller = NULL, State* statePtr = NULL);
+    static MblMwMetaWearBoardCustom* mwbc_create(MetaWearDevice* parent, QLowEnergyController *controller = NULL);
     static void mwbc_disconnect(MblMwMetaWearBoardCustom* board);
 
     static void is_initialized(MblMwMetaWearBoard *board, int32_t status);

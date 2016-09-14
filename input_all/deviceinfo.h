@@ -64,6 +64,7 @@ public:
     DeviceInfo(const QBluetoothDeviceInfo &device, QObject *parent = Q_NULLPTR);
     QString getName() const ;
     QString getAddress() const;
+    QString getUuid() const;
     QBluetoothDeviceInfo getDevice() const;
 
     State getState() const { return m_state; }
@@ -71,10 +72,8 @@ public:
 signals:
     void deviceChanged();
 
-private:
-    QBluetoothDeviceInfo m_device;
-
 protected:
+    QBluetoothDeviceInfo m_device;
     State m_state;
 };
 

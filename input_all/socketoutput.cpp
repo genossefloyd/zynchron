@@ -82,6 +82,10 @@ void SocketOutput::sendData(char deviceID, char tag, const QByteArray& payload)
         if( -1 == m_socket->write(data) )
             qWarning() << "Failed to send data to " << m_socket->peerAddress();
     }
+    else
+    {
+        qDebug() << "not sending: " << data.toHex();
+    }
 }
 
 void DummyDataSource::run()
