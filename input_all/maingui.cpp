@@ -1,6 +1,7 @@
 #include "maingui.h"
 #include "ui_maingui.h"
 #include "socketoutput.h"
+#include "mqttoutput.h"
 #include "deviceinfo.h"
 #include "mwdevicecontrol.h"
 
@@ -44,16 +45,21 @@ MainGui::MainGui(QWidget *parent) :
 {
     m_ui->setupUi(this);
 
-    connect(this, SIGNAL(clicked_SendDummyData()), SocketOutput::instance(), SLOT(toogleDummy()));
+    MqttOutput* out = MqttOutput::instance();
+    out->init("127.0.0.1",1883);
+
+    connect(this, SIGNAL(clicked_SendDummyData()), out, SLOT(toogleDummy()));
     connect(&m_connector, SIGNAL(updated()), this, SLOT(updateDeviceList()));
 
     gui = this;
     connect(this, SIGNAL(received_output(QString)), this, SLOT(addLogOutput(QString)));
     qInstallMessageHandler(messageOutputGUI);
+
 }
 
 MainGui::~MainGui()
 {
+    MqttOutput::instance()->shutdown();
     gui = NULL;
     delete m_ui;
 }

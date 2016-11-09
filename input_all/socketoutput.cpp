@@ -1,8 +1,7 @@
 #include "socketoutput.h"
 #include "messages.h"
 
-#include <qdebug.h>
-#include <qmath.h>
+#include <QDebug>
 
 SocketOutput* SocketOutput::instance()
 {
@@ -15,10 +14,9 @@ SocketOutput* SocketOutput::instance()
 }
 
 SocketOutput::SocketOutput(QObject *parent)
-    : QObject(parent)
+    : AbstractOutput(parent)
     , m_socket(NULL)
     , m_server(new QTcpServer(this))
-    , m_dummyThread(NULL)
 {
     m_server->listen(QHostAddress::LocalHost, 54345);
     connect(m_server, SIGNAL(newConnection()), this, SLOT(connected()));
@@ -30,36 +28,6 @@ void SocketOutput::connected()
     qDebug() << "SocketOutput is connected to " << m_socket->peerAddress();
 }
 
-void SocketOutput::toogleDummy()
-{
-    if(m_dummyThread && m_dummyThread->isRunning())
-        stopDummy();
-    else
-        startDummy();
-}
-
-void SocketOutput::startDummy()
-{
-    if(m_dummyThread && m_dummyThread->isRunning())
-        stopDummy();
-
-    m_dummyThread = new DummyDataSource();
-
-    connect(m_dummyThread, SIGNAL(finished()), this, SLOT(stopDummy()));
-    connect(m_dummyThread, SIGNAL(send(char,char,QByteArray)), this, SLOT(sendData(char,char,QByteArray)));
-    m_dummyThread->start();
-}
-
-void SocketOutput::stopDummy()
-{
-    if(m_dummyThread)
-    {
-        m_dummyThread->keepRunning = false;
-        m_dummyThread->wait();
-        delete m_dummyThread;
-        m_dummyThread = NULL;
-    }
-}
 
 void SocketOutput::sendData(char deviceID, char tag, const QByteArray& payload)
 {
@@ -88,28 +56,3 @@ void SocketOutput::sendData(char deviceID, char tag, const QByteArray& payload)
     }
 }
 
-void DummyDataSource::run()
-{
-    keepRunning = true;
-
-    float x = 0.0f, y = 1.57f, z = 3.14f;
-    int len = sizeof(float);
-    QByteArray dummyData;
-
-    while(keepRunning)
-    {
-        float value = qSin(x);
-        dummyData.append((char*)&value,len);
-        value = qSin(y);
-        dummyData.append((char*)&value,len);
-        value = qSin(z);
-        dummyData.append((char*)&value,len);
-
-        emit send(0x01, (char) msg::ACCELEROMETER, dummyData);
-        dummyData.clear();
-        x+=0.1f;
-        y+=0.1f;
-        z+=0.1f;
-        QThread::msleep(100);
-    }
-}

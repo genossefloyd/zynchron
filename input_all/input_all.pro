@@ -64,7 +64,10 @@ SOURCES += main.cpp\
     sensor/cpp/serialpassthrough.cpp \
     sensor/cpp/switch.cpp \
     mwdevicecontrol.cpp \
-    socketoutput.cpp
+    socketoutput.cpp \
+    mqttoutput.cpp \
+    dummydatasource.cpp \
+    abstractoutput.cpp
 
 HEADERS  += maingui.h \
     bluetoothconnector.h \
@@ -181,7 +184,15 @@ HEADERS  += maingui.h \
     metaweardevice.h \
     mwdevicecontrol.h \
     socketoutput.h \
-    messages.h
+    messages.h \
+    mqttoutput.h \
+    dummydatasource.h \
+    abstractoutput.h
 
 FORMS    += maingui.ui \
     mwdevicecontrol.ui
+
+unix: LIBS += -L$$PWD/../../../../../../../usr/local/Cellar/mosquitto/1.4.10/lib/ -lmosquitto.1.4.10
+
+INCLUDEPATH += $$PWD/../../../../../../../usr/local/Cellar/mosquitto/1.4.10/include
+DEPENDPATH += $$PWD/../../../../../../../usr/local/Cellar/mosquitto/1.4.10/include
