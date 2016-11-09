@@ -37,11 +37,11 @@ void MqttOutput::sendData(char deviceID, char tag, const QByteArray& payload)
 {
     QString topic = DEVICE_TYPE;
     topic.append("/");
-    topic.append(deviceID);
+    topic.append(QString::asprintf("%x",deviceID));
     topic.append("/data/");
-    topic.append(tag);
+    topic.append(QString::asprintf("%x",tag));
 
-    qDebug() << "sending mqtt: topic="<< topic << "; data= " << payload.toHex();
+    qDebug() << "sending mqtt: topic="<< topic << " data= " << payload.toHex();
     mosquitto_publish(m_mqtt,NULL,topic.toStdString().c_str(),payload.length(),payload.data(),0,true);
 }
 
