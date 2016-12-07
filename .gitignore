@@ -5,3 +5,7 @@ bin/input_all.app/Contents/MacOS/input_all
 *.user
 
 Simple-WebSocket-Server-master.zip
+
+*.user
+
+bin/input_all.app/Contents/MacOS/input_all
