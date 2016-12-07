@@ -47,6 +47,8 @@ MainGui::MainGui(QWidget *parent) :
 
     MqttOutput* out = MqttOutput::instance();
     out->init("127.0.0.1",1883);
+    //out->init("192.168.178.62",1883);
+    //out->init("broker.mqttdashboard.com",1883);
 
     connect(this, SIGNAL(clicked_SendDummyData()), out, SLOT(toogleDummy()));
     connect(&m_connector, SIGNAL(updated()), this, SLOT(updateDeviceList()));
@@ -80,15 +82,25 @@ void MainGui::on_butten_Search_clicked()
 
 void MainGui::on_button_LED_clicked()
 {
-    emit clicked_LED();
+
 }
 
 void MainGui::on_button_Data_clicked()
 {
-    emit clicked_FetchData();
+
 }
 
 void MainGui::on_button_dummyData_clicked()
 {
     emit clicked_SendDummyData();
+}
+
+void MainGui::on_button_Data_released()
+{
+    emit clicked_FetchData();
+}
+
+void MainGui::on_button_LED_released()
+{
+    emit clicked_LED();
 }

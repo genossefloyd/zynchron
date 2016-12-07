@@ -2,6 +2,7 @@
 #include "maingui.h"
 #include "messages.h"
 #include "socketoutput.h"
+#include "mqttoutput.h"
 
 #include "core/cpp/constant.h"
 #include "core/status.h"
@@ -141,7 +142,7 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
         mbl_mw_led_play(board);
 
         //setup data output connection
-        connect(board->parent,SIGNAL(newData(char,char,QByteArray)),SocketOutput::instance(),SLOT(sendData(char,char,QByteArray)));
+        connect(board->parent,SIGNAL(newData(char,char,QByteArray)),MqttOutput::instance(),SLOT(sendData(char,char,QByteArray)));
 
         //setup acc sampling
         check_acc_type(board);

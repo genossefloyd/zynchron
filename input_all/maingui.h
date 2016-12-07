@@ -39,6 +39,8 @@ private slots:
     void on_button_LED_clicked();
     void on_button_Data_clicked();
     void on_button_dummyData_clicked();
+    void on_button_Data_released();
+    void on_button_LED_released();
 };
 
 #endif // MAINGUI_H
