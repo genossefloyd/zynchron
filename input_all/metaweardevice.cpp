@@ -399,6 +399,7 @@ void MetaWearDevice::toogleLED()
 
 void MetaWearDevice::fetchData()
 {
+    qDebug()<<"toggle data";
     if( mbl_mw_metawearboard_is_initialized(m_board) )
     {
         if( !m_board->fetchingdata )
@@ -440,7 +441,7 @@ void MetaWearDevice::handle_data(const MblMwMetaWearBoardCustom* board, const Mb
         qdata.append((char*)&value,len);
 
         if(board->parent)
-            emit board->parent->newData(board->datastreamid,msg::ACCELEROMETER,qdata);
+            emit board->parent->newData((char)board->datastreamid,msg::ACCELEROMETER,qdata);
         break;
     default:
         break;

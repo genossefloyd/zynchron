@@ -101,7 +101,7 @@
      <item>
       <widget class="QPushButton" name="button_dummyData">
        <property name="text">
-        <string>Toogle Dummy Data</string>
+        <string>Toggle Dummy Data</string>
        </property>
       </widget>
      </item>

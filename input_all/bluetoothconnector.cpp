@@ -64,7 +64,8 @@ void BluetoothConnector::deviceDiscovered(const QBluetoothDeviceInfo &device)
 
     //check for unknown BTLE device
     if ( (device.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration)
-         && ! m_devices.contains(device.deviceUuid()) )
+         && ! m_devices.contains(device.deviceUuid())
+         && device.name().contains("MetaWear",Qt::CaseInsensitive) )
     {
         qDebug() << "It is a new device. Add it to the list";
 

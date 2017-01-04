@@ -20,11 +20,11 @@ void DummyDataSource::run()
         value = qSin(z);
         dummyData.append((char*)&value,len);
 
-        emit send(0x01, (char) msg::ACCELEROMETER, dummyData);
+        emit send(0xa9, msg::ACCELEROMETER, dummyData);
         dummyData.clear();
         x+=0.1f;
         y+=0.1f;
         z+=0.1f;
-        QThread::msleep(100);
+        QThread::msleep(250);
     }
 }

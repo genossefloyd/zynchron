@@ -43,15 +43,16 @@ static float toFloat(QByteArray array)
 
 void MqttOutput::sendData(char deviceID, char tag, const QByteArray& payload)
 {
+    unsigned char id = deviceID;
     QString topicByte = DEVICE_TYPE;
     topicByte.append("/");
-    topicByte.append(QString::asprintf("%x",deviceID));
+    topicByte.append(QString::asprintf("%x",id));
     topicByte.append("/byte/");
     topicByte.append(QString::asprintf("%x",tag));
 
     QString topicString = DEVICE_TYPE;
     topicString.append("/");
-    topicString.append(QString::asprintf("%x",deviceID));
+    topicString.append(QString::asprintf("%x",id));
     topicString.append("/string/");
     topicString.append(QString::asprintf("%x",tag));
 
@@ -60,8 +61,8 @@ void MqttOutput::sendData(char deviceID, char tag, const QByteArray& payload)
     qDebug() << "sending mqtt: topic="<< topicByte << " data= " << payload.toHex();
     qDebug() << "sending mqtt: topic="<< topicString << " data= " << data;
 
-    mosquitto_publish(m_mqtt,NULL,topicByte.toStdString().c_str(),payload.length(),payload.data(),0,true);
-    mosquitto_publish(m_mqtt,NULL,topicString.toStdString().c_str(),data.length(),data.toStdString().c_str(),0,true);
+    mosquitto_publish(m_mqtt,NULL,topicByte.toStdString().c_str(),payload.length(),payload.data(),0,false);
+    mosquitto_publish(m_mqtt,NULL,topicString.toStdString().c_str(),data.length(),data.toStdString().c_str(),0,false);
 }
 
 bool MqttOutput::shutdown()

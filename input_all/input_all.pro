@@ -192,7 +192,7 @@ HEADERS  += maingui.h \
 FORMS    += maingui.ui \
     mwdevicecontrol.ui
 
-unix: LIBS += -L$$PWD/../../../../../../../usr/local/Cellar/mosquitto/1.4.10/lib/ -lmosquitto.1.4.10
+unix: LIBS += -L/usr/local/lib/ -lmosquitto.1.4.10
 
-INCLUDEPATH += $$PWD/../../../../../../../usr/local/Cellar/mosquitto/1.4.10/include
-DEPENDPATH += $$PWD/../../../../../../../usr/local/Cellar/mosquitto/1.4.10/include
+INCLUDEPATH += /usr/local/include
+DEPENDPATH += /usr/local/include
