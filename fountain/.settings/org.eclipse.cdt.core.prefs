@@ -1,0 +1,14 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.952694683/SYSROOT/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.952694683/SYSROOT/operation=replace
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.952694683/SYSROOT/value=/Users/Mopple/Documents/Privat/Projekte/external/raspberrypi/sysroot
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.952694683/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.952694683/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/DYLD_LIBRARY_PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/DYLD_LIBRARY_PATH/operation=append
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/DYLD_LIBRARY_PATH/value=/usr/local/lib
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/SYSROOT/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/SYSROOT/operation=append
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/SYSROOT/value=/Users/Mopple/Documents/Privat/Projekte/external/raspberrypi/sysroot
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.668073589/appendContributed=true
