@@ -69,7 +69,7 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 	gatt_connection_t* gatt_connection;
 
 	char uuid_str[MAX_LEN_UUID_STR + 1];
-	int ret, i;
+	int ret;
 
 	printf("------------START %s ---------------\n", addr);
 
@@ -95,7 +95,7 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 		return;
 	}
 
-	for (i = 0; i < services_count; i++) {
+	for (int i = 0; i < services_count; i++) {
 		gattlib_uuid_to_string(&services[i].uuid, uuid_str, sizeof(uuid_str));
 
 		printf("service[%d] start_handle:%02x end_handle:%02x uuid:%s\n", i,
@@ -113,7 +113,7 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 		fprintf(stderr, "Fail to discover characteristics.\n");
 		return;
 	}
-	for (i = 0; i < characteristics_count; i++) {
+	for (int i = 0; i < characteristics_count; i++) {
 		gattlib_uuid_to_string(&characteristics[i].uuid, uuid_str, sizeof(uuid_str));
 
 		printf("characteristic[%d] properties:%02x value_handle:%04x uuid:%s\n", i,
@@ -131,7 +131,7 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 		fprintf(stderr, "Fail to discover descriptors.\n");
 		return;
 	}
-	for (i = 0; i < descriptor_count; i++) {
+	for (int i = 0; i < descriptor_count; i++) {
 		gattlib_uuid_to_string(&descriptors[i].uuid, uuid_str, sizeof(uuid_str));
 
 		printf("descriptors[%d] value_handle:%04x uuid:%s\n", i,

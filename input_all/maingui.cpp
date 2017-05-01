@@ -46,9 +46,9 @@ MainGui::MainGui(QWidget *parent) :
     m_ui->setupUi(this);
 
     MqttOutput* out = MqttOutput::instance();
-    out->init("127.0.0.1",1883);
+    //out->init("127.0.0.1",1883);
     //out->init("192.168.178.62",1883);
-    //out->init("broker.mqttdashboard.com",1883);
+    out->init("broker.mqttdashboard.com",1883);
 
     connect(this, SIGNAL(clicked_SendDummyData()), out, SLOT(toogleDummy()));
     connect(&m_connector, SIGNAL(updated()), this, SLOT(updateDeviceList()));
@@ -102,5 +102,6 @@ void MainGui::on_button_Data_released()
 
 void MainGui::on_button_LED_released()
 {
+    qDebug() << "released";
     emit clicked_LED();
 }

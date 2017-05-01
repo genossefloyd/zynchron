@@ -23,6 +23,8 @@
 #include <assert.h>
 #include <string.h>
 
+#define PRINT_ARRAY(data, len) for(auto j = 0; j < len; j++){ printf("%02X", data[j]); } printf("\n");
+
 static const uuid_t METAWARE_SERVICE_UUID = HighLow2Uuid(METAWEAR_SERVICE_NOTIFY_CHAR.service_uuid_high,
                                                     METAWEAR_SERVICE_NOTIFY_CHAR.service_uuid_low);
 
@@ -233,6 +235,7 @@ void MetaWearDevice::read_gatt_char(const void* caller, const MblMwGattChar *cha
 void MetaWearDevice::gatt_notification_cb(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data)
 {
 	printf("notify gatt char start\n");
+	PRINT_ARRAY(data, data_length);
     if(gattlib_uuid_cmp(uuid, &METAWARE_CHARACTERISTIC_UUID) == 0)
     {
     	MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*) user_data;
