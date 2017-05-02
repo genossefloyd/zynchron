@@ -1,6 +1,8 @@
 #include "metaweardevice.h"
 #include "messages.h"
 
+#include "base/MutexGuard.h"
+#include "base/Thread.h"
 #include "bluetooth/uuid.h"
 
 #include "core/cpp/constant.h"
@@ -23,7 +25,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define PRINT_ARRAY(data, len) for(auto j = 0; j < len; j++){ printf("%02X", data[j]); } printf("\n");
+#define PRINT_ARRAY(data, len) for(size_t j = 0; j < len; j++){ printf("%02X", data[j]); } printf("\n");
 
 static const uuid_t METAWARE_SERVICE_UUID = HighLow2Uuid(METAWEAR_SERVICE_NOTIFY_CHAR.service_uuid_high,
                                                     METAWEAR_SERVICE_NOTIFY_CHAR.service_uuid_low);
@@ -35,9 +37,14 @@ const MblMwBtleConnection MetaWearDevice::CONNECTION = { MetaWearDevice::write_g
 
 uuid_t HighLow2Uuid(const uint64_t high, const uint64_t low)
 {
-	char buffer[32];
-	memset(buffer,0,32);
-	sprintf(buffer, "%016" PRIx64 "%016" PRIx64, high, low);
+	char buffer[33];
+	int len = sizeof(buffer);
+	memset(buffer,0,len);
+	int wlen = snprintf(buffer, len, "%016" PRIx64 "%016" PRIx64, high, low);
+	if(len <= wlen)
+	{
+		printf("Error");
+	}
 
 	std::string suuid(buffer);
 	suuid.insert(20,"-");
@@ -135,6 +142,7 @@ MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(MetaWearDe
     board->datastreamid = std::rand() & 0xFF;
     board->fetchingdata = false;
     board->reconnect = true;
+
     return board;
 }
 
@@ -148,7 +156,7 @@ bool MetaWearDevice::initialize()
 	m_state = Pairing;
 
     //mbl_mw_settings_set_connection_parameters(m_board, 10.f, 50.f, 0, 1000);
-	gattlib_register_notification(m_connection, gatt_notification_cb, &m_board);
+	gattlib_register_notification(m_connection, gatt_notification_cb, this);
 	gattlib_notification_start(m_connection, &METAWARE_CHARACTERISTIC_UUID);
 
     mbl_mw_metawearboard_initialize(m_board, is_initialized);
@@ -162,8 +170,6 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
 
     if(status != MBL_MW_STATUS_ERROR_TIMEOUT)
     {
-        board->parent->m_state = Paired;
-
         MblMwLedPattern pattern;
         mbl_mw_led_load_preset_pattern(&pattern, MBL_MW_LED_PRESET_BLINK);
         pattern.repeat_count = 3;
@@ -180,6 +186,8 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
         check_acc_type(board);
         auto acc_signal = mbl_mw_acc_get_acceleration_data_signal(board);
         mbl_mw_datasignal_subscribe(acc_signal, acc_handler);
+
+        board->parent->m_state = Paired;
     }
     else
     {
@@ -201,13 +209,18 @@ void MetaWearDevice::write_gatt_char(const void* caller, const MblMwGattChar *ch
 {
 	printf("write gatt char begin\n");
     MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*)caller;
-    uuid_t uuidChar = HighLow2Uuid(characteristic->uuid_high,characteristic->uuid_low);
+    if(board->parent->m_state >= Connected)
+    {
+    	base::MutexGuard g(board->parent->m_mutexConnection);
+		uuid_t uuidChar = HighLow2Uuid(characteristic->uuid_high,characteristic->uuid_low);
 
-	int ret = gattlib_write_char_by_uuid(board->parent->m_connection, &uuidChar, value, length);
-	if(ret != 0)
-	{
-		fprintf(stderr, "Fail to find write char.\n");
-	}
+		printf("write "); PRINT_ARRAY(value, length);
+		int ret = gattlib_write_char_by_uuid(board->parent->m_connection, &uuidChar, value, length);
+		if(ret != 0)
+		{
+			fprintf(stderr, "Fail to find write char.\n");
+		}
+    }
 	printf("write gatt char end\n");
 }
 
@@ -215,31 +228,43 @@ void MetaWearDevice::read_gatt_char(const void* caller, const MblMwGattChar *cha
 {
 	printf("read gatt char begin\n");
     MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*)caller;
-    //uuid_t uuidService = HighLow2Uuid(characteristic->service_uuid_high,characteristic->service_uuid_low);
-    uuid_t uuidChar = HighLow2Uuid(characteristic->uuid_high,characteristic->uuid_low);
-
-    size_t buf_len = 255;
-    uint8_t buffer[255];
-    memset(buffer, 0, buf_len);
-
-    if(0 != gattlib_read_char_by_uuid(board->parent->m_connection, &uuidChar, buffer, &buf_len))
+    if(board->parent->m_state >= Connected)
     {
-    	buf_len = 0;
-    }
-    printf("read gatt char: %d\n", buf_len);
+    	board->parent->m_mutexConnection.lock();
+        uuid_t uuidChar = HighLow2Uuid(characteristic->uuid_high,characteristic->uuid_low);
 
-    mbl_mw_metawearboard_char_read(board, characteristic, buffer, buf_len);
+		uint8_t buffer[255];
+		size_t buf_len = sizeof(buffer);
+		memset(buffer, 0, buf_len);
+
+		if(0 != gattlib_read_char_by_uuid(board->parent->m_connection, &uuidChar, buffer, &buf_len))
+		{
+			buf_len = 0;
+		}
+		board->parent->m_mutexConnection.unlock();
+		printf("read %d bytes\n", buf_len);
+
+		mbl_mw_metawearboard_char_read(board, characteristic, buffer, buf_len);
+    }
     printf("read gatt char end\n");
 }
 
 void MetaWearDevice::gatt_notification_cb(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data)
 {
 	printf("notify gatt char start\n");
-	PRINT_ARRAY(data, data_length);
+	printf("received "); PRINT_ARRAY(data, data_length);
     if(gattlib_uuid_cmp(uuid, &METAWARE_CHARACTERISTIC_UUID) == 0)
     {
-    	MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*) user_data;
-        mbl_mw_metawearboard_notify_char_changed(board, data, data_length);
+    	MetaWearDevice* device = (MetaWearDevice*) user_data;
+    	base::MutexGuard g(device->m_mutexConnection);
+
+    	auto func = [](MetaWearDevice *device, const uint8_t* buf, size_t bufLen) -> void {
+    		//base::Thread::sleepMs(100);
+    		mbl_mw_metawearboard_notify_char_changed(device->m_board, buf, bufLen);
+    		printf("notify gatt char done\n");
+    	};
+    	std::thread test(func, device, data, data_length);
+    	test.detach();
     }
     printf("notify gatt char end\n");
 }

@@ -21,7 +21,15 @@ int main()
 	{
 		MetaWearDevice* mwDev = new MetaWearDevice(device, out);
 		mwDev->initialize();
-		while(mwDev->getState() != BluetoothDevice::Disconnected) base::Thread::sleep(1);
+		while(mwDev->getState() != BluetoothDevice::Disconnected) {
+			base::Thread::sleep(1);
+			if(mwDev->getState() == BluetoothDevice::Paired) break;
+		}
+
+		if(mwDev->getState() == BluetoothDevice::Paired) {
+			mwDev->fetchData();
+			while(mwDev->getState() != BluetoothDevice::Disconnected) base::Thread::sleep(1);
+		}
 	}
 #else
 	BluetoothConnector connector;

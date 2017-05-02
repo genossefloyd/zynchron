@@ -9,6 +9,7 @@
 #include "core/data.h"
 
 #include <map>
+#include <mutex>
 
 class MetaWearDevice : public BluetoothDevice
 {
@@ -37,7 +38,8 @@ private:
     };
 
     MblMwMetaWearBoardCustom*   m_board;
-    AbstractOutput* m_output;
+    AbstractOutput* 			m_output;
+    mutable std::mutex 			m_mutexConnection;
 
     static MblMwMetaWearBoardCustom* mwbc_create(MetaWearDevice* parent);
     static void mwbc_disconnect(MblMwMetaWearBoardCustom* board);

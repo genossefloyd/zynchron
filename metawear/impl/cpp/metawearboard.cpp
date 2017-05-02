@@ -80,7 +80,7 @@ static inline int32_t forward_response(const ResponseHeader& header, MblMwMetaWe
         free(data);
 
         return MBL_MW_STATUS_OK;
-    } catch (exception) {
+    } catch (exception& e) {
         return MBL_MW_STATUS_WARNING_UNEXPECTED_SENSOR_DATA;
     }
 }
@@ -112,7 +112,7 @@ int32_t response_handler_packed_data(MblMwMetaWearBoard *board, const uint8_t *r
         }
 
         return MBL_MW_STATUS_OK;
-    } catch (exception) {
+    } catch (exception& e) {
         return MBL_MW_STATUS_WARNING_UNEXPECTED_SENSOR_DATA;
     }
 }
@@ -197,11 +197,18 @@ const vector<MblMwGattChar> BOARD_DEV_INFO_CHARS = {
 
 const uint8_t SERIALIZATION_FORMAT = 0;
 
-MblMwMetaWearBoard::MblMwMetaWearBoard() : logger_state(nullptr, [](void *ptr) -> void { tear_down_logging(ptr, false); }),
+MblMwMetaWearBoard::MblMwMetaWearBoard() :
+		logger_state(nullptr, [](void *ptr) -> void { tear_down_logging(ptr, false); }),
         timer_state(nullptr, [](void *ptr) -> void { free_timer_module(ptr); }),
         event_state(nullptr, [](void *ptr) -> void { free_event_module(ptr); }), 
         dp_state(nullptr, [](void *ptr) -> void { free_dataprocessor_module(ptr); }),
-        module_discovery_index(-1) {
+		initialized(NULL),
+		initialized_timeout(NULL),
+		log_download_notify_progress(0.0f),
+		n_log_entries(0),
+        module_discovery_index(-1),
+		dev_info_index(-1)
+{
 }
 
 MblMwMetaWearBoard::~MblMwMetaWearBoard() {
@@ -392,7 +399,7 @@ int32_t mbl_mw_metawearboard_lookup_module(const MblMwMetaWearBoard *board, MblM
             return board->module_info.at(module).implementation;
         }
         return MBL_MW_MODULE_TYPE_NA;
-    } catch (exception) {
+    } catch (exception& e) {
         return MBL_MW_MODULE_TYPE_NA;
     }
 }
