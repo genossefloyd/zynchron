@@ -22,10 +22,7 @@ BluetoothDevice::BluetoothDevice(BluetoothDevice& device)
 
 BluetoothDevice::~BluetoothDevice()
 {
-	if(m_state == Connected)
-	{
-		gattlib_disconnect(m_connection);
-	}
+	disconnect();
 }
 
 std::string BluetoothDevice::getName() const
@@ -38,8 +35,21 @@ std::string BluetoothDevice::getAddress() const
     return m_deviceAddress;
 }
 
-void BluetoothDevice::connect()
+void BluetoothDevice::disconnect()
 {
+	if(m_state == Connected)
+	{
+		gattlib_disconnect(m_connection);
+		m_connection = NULL;
+	}
+}
+
+bool BluetoothDevice::connect()
+{
+	if(m_state == Connected) {
+		return true;
+	}
+
 	if (m_deviceName.size() > 0) {
 		printf("Discovered %s - '%s'\n", m_deviceAddress.c_str(), m_deviceName.c_str());
 	} else {
@@ -47,41 +57,44 @@ void BluetoothDevice::connect()
 	}
 
 	m_state = Connecting;
-	createGattConnection(this);
-	if(m_connection == NULL)
-	{
-		m_state = Disconnected;
-	}
-}
 
-void BluetoothDevice::createGattConnection(BluetoothDevice* device)
-{
-	if(device == NULL) {
-		return;
-	}
-
-	const char* addr = device->m_deviceAddress.c_str();
+	const char* addr = m_deviceAddress.c_str();
 	gatt_connection_t* gatt_connection;
 
-	char uuid_str[MAX_LEN_UUID_STR + 1];
-	int ret;
-
-	printf("------------START %s ---------------\n", addr);
+	printf("------------CONNECT %s ---------------\n", addr);
 
 	gatt_connection = gattlib_connect(NULL, addr, BDADDR_LE_RANDOM, BT_SEC_LOW, 0, 0);
 	if (gatt_connection == NULL) {
 		gatt_connection = gattlib_connect(NULL, addr, BDADDR_LE_PUBLIC, BT_SEC_LOW, 0, 0);
-		if (gatt_connection == NULL) {
-			fprintf(stderr, "Fail to connect to the bluetooth device.\n");
-			return;
-		} else {
-			puts("Succeeded to connect to the bluetooth device.");
-		}
-	} else {
-		puts("Succeeded to connect to the bluetooth device with random address.");
 	}
 
-#if 0
+	if (gatt_connection == NULL) {
+		fprintf(stderr, "Fail to connect to the bluetooth device.\n");
+		m_state = Disconnected;
+		return false;
+	} else {
+		puts("Succeeded to connect to the bluetooth device.");
+	}
+
+	//discoverChars(gatt_connection);
+
+	printf("------------DONE %s ---------------\n", addr);
+
+	m_connection = gatt_connection;
+	m_state = Connected;
+	return true;
+}
+
+void BluetoothDevice::discoverChars(gatt_connection_t* gatt_connection)
+{
+	if(gatt_connection == NULL) {
+		return;
+	}
+	char uuid_str[MAX_LEN_UUID_STR + 1];
+	int ret;
+
+	printf("--------------- DISCOVER ---------------\n");
+
 	gattlib_primary_service_t* services;
 	int services_count = 0;
 	ret = gattlib_discover_primary(gatt_connection, &services, &services_count);
@@ -98,9 +111,7 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 				uuid_str);
 	}
 	free(services);
-#endif
 
-#if 0
 	gattlib_characteristic_t* characteristics;
 	int characteristics_count = 0;
 	ret = gattlib_discover_char(gatt_connection, &characteristics, &characteristics_count);
@@ -116,9 +127,7 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 				uuid_str);
 	}
 	free(characteristics);
-#endif
 
-#if 0
 	gattlib_descriptor_t* descriptors;
 	int descriptor_count = 0;
 	ret = gattlib_discover_desc(gatt_connection, &descriptors, &descriptor_count);
@@ -134,10 +143,4 @@ void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 				uuid_str);
 	}
 	free(descriptors);
-#endif
-
-	device->m_connection = gatt_connection;
-	device->m_state = Connected;
-
-	printf("------------DONE %s ---------------\n", addr);
 }

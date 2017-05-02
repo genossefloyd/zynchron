@@ -71,7 +71,7 @@ void MqttOutput::sendData(char deviceID, char tag, const ByteArray& payload)
     int length = asprintf(&data,"%f,%f,%f",toFloat(data), toFloat(data+4), toFloat(data+8));
 
     std::cout << "sending mqtt: topic="<< topicByte << " data= " << std::hex << payload.data() << std::dec << std::endl;
-    std::cout << "sending mqtt: topic="<< topicString << " data= " << data << std::endl;
+    //std::cout << "sending mqtt: topic="<< topicString << " data= " << data << std::endl;
 
     mosquitto_publish(m_mqtt,NULL,topicByte.c_str(),payload.size(),payload.data(),0,false);
     mosquitto_publish(m_mqtt,NULL,topicString.c_str(),length,data,0,false);

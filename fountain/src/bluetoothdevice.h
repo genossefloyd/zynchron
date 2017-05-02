@@ -29,10 +29,12 @@ public:
     std::string getAddress() const;
 
     State getState() const { return m_state; }
-    void connect();
+
+    bool connect();
+    void disconnect();
 
 protected:
-    static void createGattConnection(BluetoothDevice* device);
+    static void discoverChars(gatt_connection_t* gatt_connection);
 
     std::string m_deviceName;
     std::string m_deviceAddress;

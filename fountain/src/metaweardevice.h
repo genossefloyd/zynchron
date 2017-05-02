@@ -25,8 +25,8 @@ public:
     explicit MetaWearDevice(BluetoothDevice & device, AbstractOutput* output);
     virtual ~MetaWearDevice();
 
-    bool initialize();
-    void disconnect();
+    bool bind();
+    void unbind();
 	
     void toogleLED();
     void fetchData();
@@ -34,6 +34,7 @@ public:
 private:
     enum MessageType 
     {
+    	INIT,
         NOTIFY,
         FETCH_DATA,
         TOGGLE_LED
@@ -64,9 +65,11 @@ private:
     MblMwMetaWearBoardCustom*   m_board;
     AbstractOutput* 			m_output;
 	
+    bool						m_isProcessing;
 	std::thread					m_workerThread;
 	std::deque<Message*>		m_messageQueue;
 	base::Semaphore				m_msgQueueSemaphore;
+	std::condition_variable		m_cv;
     mutable std::mutex 			m_mutexNotify;
 
 private:
@@ -79,7 +82,9 @@ private:
     static void start_processing(MetaWearDevice* device);
     static void is_initialized(MblMwMetaWearBoard *board, int32_t status);
     
+    static void handle_indication(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data);
     static void add_notification(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data);
+
     static void write_gatt_char(const void* caller, const MblMwGattChar *characteristic, const uint8_t *value, uint8_t length);
     static void read_gatt_char(const void* caller, const MblMwGattChar *characteristic);
 

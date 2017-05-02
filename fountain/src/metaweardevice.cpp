@@ -121,6 +121,7 @@ MetaWearDevice::MetaWearDevice(BluetoothDevice & device, AbstractOutput* output)
     : BluetoothDevice(device)
     , m_board(NULL)
 	, m_output(output)
+	, m_isProcessing(false)
 	, m_msgQueueSemaphore(0)
 {
 	assert(output != NULL);
@@ -128,34 +129,44 @@ MetaWearDevice::MetaWearDevice(BluetoothDevice & device, AbstractOutput* output)
 
 MetaWearDevice::~MetaWearDevice()
 {
-    disconnect();
+	unbind();
+
+    m_mutexNotify.lock();
+	m_messageQueue.clear();
+	m_isProcessing = false;
+	m_msgQueueSemaphore.notify();
+	m_mutexNotify.unlock();
+
+	m_workerThread.join();
+
     mbl_mw_metawearboard_free(m_board);
     m_board = NULL;
 }
 
-
-bool MetaWearDevice::initialize()
+bool MetaWearDevice::bind()
 {
-    if (m_state == Paired) 
+    if (m_state == Paired || m_connection == NULL)
     {
         return false;
     }
 
 	if(m_board == NULL)
 	{
+		m_workerThread = std::thread(start_processing, this);
         m_board = mwbc_create(this);
 	}
 	m_state = Pairing;
 
-    //mbl_mw_settings_set_connection_parameters(m_board, 10.f, 50.f, 0, 1000);
 	gattlib_register_notification(m_connection, add_notification, this);
 	gattlib_notification_start(m_connection, &METAWARE_CHARACTERISTIC_UUID);
 	
-    m_workerThread = std::thread(start_processing, this);
+	gattlib_register_indication(m_connection, handle_indication, this);
+
+	add_message(new Message(INIT));
     return true;
 }
 
-void MetaWearDevice::disconnect()
+void MetaWearDevice::unbind()
 {
     if (m_state >= Pairing)
     {
@@ -163,12 +174,6 @@ void MetaWearDevice::disconnect()
         mbl_mw_metawearboard_tear_down(m_board);
 
         m_state = Connected;
-        {
-            std::unique_lock<std::mutex> lock(m_mutexNotify);
-            m_messageQueue.clear();
-            m_msgQueueSemaphore.notify();
-            m_workerThread.join(); 
-        }
     }
 }
 
@@ -192,26 +197,30 @@ void MetaWearDevice::start_processing(MetaWearDevice* device)
 
 void MetaWearDevice::execute()
 {
-	mbl_mw_metawearboard_initialize(m_board, is_initialized);
-
     printf("start processing\n");
+    m_isProcessing = true;
 
     Message* newMessage = NULL;
-	while(m_state == Pairing || m_state == Paired)
+	while(m_isProcessing)
 	{
-		m_msgQueueSemaphore.wait();
-		
-		std::unique_lock<std::mutex> lock(m_mutexNotify);
+		m_msgQueueSemaphore.wait(100);
+
+		m_mutexNotify.lock();
         if (m_messageQueue.size() > 0)
         {
+        	printf("events %u\n", m_messageQueue.size());
             newMessage = m_messageQueue.front();
             m_messageQueue.pop_front();
-            
-            process_message(newMessage);
-
-            delete newMessage;
-            newMessage = NULL;
         }
+        m_mutexNotify.unlock();
+            
+        if(newMessage != NULL)
+		{
+        	process_message(newMessage);
+
+        	delete newMessage;
+        	newMessage = NULL;
+		}
 	}
     printf("stop processing\n");
 }
@@ -220,7 +229,7 @@ void MetaWearDevice::add_message(Message* newMessage)
 {
     if (newMessage != NULL)
     {
-        std::unique_lock<std::mutex> lock(m_mutexNotify);
+        std::lock_guard<std::mutex> lock(m_mutexNotify);
         m_messageQueue.push_back(newMessage);
         m_msgQueueSemaphore.notify();
     }
@@ -231,52 +240,60 @@ void MetaWearDevice::process_message(Message* newMessage)
     if (m_board == NULL || newMessage == NULL)
         return;
 
-    if (mbl_mw_metawearboard_is_initialized(m_board))
-    {
-        if (newMessage->type == NOTIFY)
-        {
-            printf("process notify gatt char start\n");
-            printf("received "); PRINT_ARRAY(newMessage->payload.data(), newMessage->payload.size());
-            if (gattlib_uuid_cmp(&newMessage->characteristic, &METAWARE_CHARACTERISTIC_UUID) == 0)
-            {
-                mbl_mw_metawearboard_notify_char_changed(m_board, newMessage->payload.data(), newMessage->payload.size());
-            }
-            printf("process notify gatt char end\n");
-        }
-        else if (newMessage->type == TOGGLE_LED)
-        {
-            std::cout << "toggle led" << std::endl;
-            static bool isOn = true;
-            isOn = !isOn;
+	switch(newMessage->type)
+	{
+	case INIT:
+		mbl_mw_metawearboard_initialize(m_board, is_initialized);
+		break;
 
-            MblMwLedPattern pattern;
-            mbl_mw_led_load_preset_pattern(&pattern, MBL_MW_LED_PRESET_SOLID);
-            mbl_mw_led_write_pattern(m_board, &pattern, MBL_MW_LED_COLOR_GREEN);
-            pattern.repeat_count = 0;
-            if (isOn)
-                mbl_mw_led_stop(m_board);
-            else
-                mbl_mw_led_play(m_board);
-        }
-        else if (newMessage->type == FETCH_DATA)
-        {
-            std::cout << "toggle data" << std::endl;
-            if (!m_board->fetchingdata)
-            {
-                m_board->fetchingdata = true;
-                //enable acc sampling
-                mbl_mw_acc_enable_acceleration_sampling(m_board);
-                mbl_mw_acc_start(m_board);
-            }
-            else
-            {
-                m_board->fetchingdata = false;
-                //enable acc sampling
-                mbl_mw_acc_disable_acceleration_sampling(m_board);
-                mbl_mw_acc_stop(m_board);
-            }
-        }
-    }
+	case NOTIFY:
+		printf("received "); PRINT_ARRAY(newMessage->payload.data(), newMessage->payload.size());
+		if (gattlib_uuid_cmp(&newMessage->characteristic, &METAWARE_CHARACTERISTIC_UUID) == 0)
+		{
+			mbl_mw_metawearboard_notify_char_changed(m_board, newMessage->payload.data(), newMessage->payload.size());
+		}
+		printf("process notify gatt char end\n");
+		break;
+
+	case TOGGLE_LED:
+		std::cout << "toggle led" << std::endl;
+		if(!mbl_mw_metawearboard_is_initialized(m_board))
+			break; //skip further processing
+
+		static bool isOn = true;
+		isOn = !isOn;
+
+		MblMwLedPattern pattern;
+		mbl_mw_led_load_preset_pattern(&pattern, MBL_MW_LED_PRESET_SOLID);
+		mbl_mw_led_write_pattern(m_board, &pattern, MBL_MW_LED_COLOR_GREEN);
+		pattern.repeat_count = 0;
+		if (isOn)
+			mbl_mw_led_stop(m_board);
+		else
+			mbl_mw_led_play(m_board);
+		break;
+
+	case FETCH_DATA:
+		std::cout << "toggle data" << std::endl;
+		if(!mbl_mw_metawearboard_is_initialized(m_board))
+			break; //skip further processing
+
+		if (!m_board->fetchingdata)
+		{
+			m_board->fetchingdata = true;
+			//enable acc sampling
+			mbl_mw_acc_enable_acceleration_sampling(m_board);
+			mbl_mw_acc_start(m_board);
+		}
+		else
+		{
+			m_board->fetchingdata = false;
+			//enable acc sampling
+			mbl_mw_acc_disable_acceleration_sampling(m_board);
+			mbl_mw_acc_stop(m_board);
+		}
+		break;
+	}
 }
 
 void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
@@ -307,14 +324,13 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
     }
     else
     {
-    	board->parent->disconnect();
+    	board->parent->unbind();
     }
 }
 
 void MetaWearDevice::write_gatt_char(const void* caller, const MblMwGattChar *characteristic,
         const uint8_t *value, uint8_t length)
 {
-	printf("write gatt char begin\n");
     MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*)caller;
     if(board->parent->m_state >= Connected)
     {
@@ -327,12 +343,10 @@ void MetaWearDevice::write_gatt_char(const void* caller, const MblMwGattChar *ch
 			fprintf(stderr, "Fail to find write char.\n");
 		}
     }
-	printf("write gatt char end\n");
 }
 
 void MetaWearDevice::read_gatt_char(const void* caller, const MblMwGattChar *characteristic)
 {
-	printf("read gatt char begin\n");
     MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*)caller;
     if(board->parent->m_state >= Connected)
     {
@@ -350,7 +364,11 @@ void MetaWearDevice::read_gatt_char(const void* caller, const MblMwGattChar *cha
 
 		mbl_mw_metawearboard_char_read(board, characteristic, buffer, buf_len);
     }
-    printf("read gatt char end\n");
+}
+
+void MetaWearDevice::handle_indication(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data)
+{
+	printf("indication\n");
 }
 
 void MetaWearDevice::add_notification(const uuid_t* uuid, const uint8_t* data, size_t data_length, void* user_data)

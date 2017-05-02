@@ -7,6 +7,9 @@
 
 #include <src/base/Semaphore.h>
 
+#include <stdlib.h>
+#include <chrono>
+
 namespace base {
 	
 Semaphore::Semaphore(unsigned long initial_count)
@@ -16,14 +19,22 @@ Semaphore::Semaphore(unsigned long initial_count)
 void Semaphore::notify() {
 	std::unique_lock<decltype(m_mutex_)> lock(m_mutex_);
 	++m_count;
+	printf("notify %lu\n", m_count);
 	m_condvar.notify_one();
 }
 
 void Semaphore::wait(unsigned int timeout) {
 	std::unique_lock<decltype(m_mutex_)> lock(m_mutex_);
-	while(!m_count) // Handle spurious wake-ups.
-		m_condvar.wait(lock);
-	--m_count;
+	printf("wait start\n");
+
+	bool success = m_condvar.wait_for(lock, std::chrono::milliseconds(timeout), [this]() { return m_count > 0; });
+	if(success)
+	{
+		--m_count;
+		printf("wait end %lu\n", m_count);
+	}
+	else
+		printf("wait timeout\n");
 }
 
 bool Semaphore::try_wait() {

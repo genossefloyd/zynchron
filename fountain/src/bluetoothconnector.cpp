@@ -159,13 +159,7 @@ BluetoothConnector::DeviceList BluetoothConnector::startScan(int device_desc, in
 		}
 
 		len = read(device_desc, buffer, sizeof(buffer));
-
-		for(int i = 0; i < len; i++) { printf("%02X",buffer[i]);}
-		printf("\n");
-		for(int i = 0; i < len; i++) { printf("%c",buffer[i]);}
-		printf("\n");
-
-		if (meta->subevent != 0x02 || (uint8_t)buffer[BLE_EVENT_TYPE] != BLE_SCAN_RESPONSE)
+		if (meta->subevent != 0x02 || ((len > BLE_EVENT_TYPE) && (uint8_t)buffer[BLE_EVENT_TYPE] != BLE_SCAN_RESPONSE))
 			continue;
 
 		info = (le_advertising_info*) (meta->data + 1);
@@ -173,13 +167,17 @@ BluetoothConnector::DeviceList BluetoothConnector::startScan(int device_desc, in
 
 		std::string name = parse_name(info->data, info->length);
 
-		printf("found device: %s\n", addr);
-		if(name == "MetaWear")
+		if(name.size() == 0)
 		{
-			BluetoothDevice* device = new BluetoothDevice(addr, name);
-			device->connect();
-			devList.push_back(device);
+			printf("found device: %s\n", addr);
 		}
+		else
+		{
+			printf("found device %s - name: %s\n", addr, name.c_str());
+		}
+
+		BluetoothDevice* device = new BluetoothDevice(name, addr);
+		devList.push_back(device);
 	}
 
 	setsockopt(device_desc, SOL_HCI, HCI_FILTER, &old_options, sizeof(old_options));
