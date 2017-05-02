@@ -1,6 +1,5 @@
 #include "bluetoothconnector.h"
 #include "core/metawearboard.h"
-#include "base/MutexGuard.h"
 
 #include <poll.h>
 #include <stdio.h>
@@ -205,7 +204,6 @@ bool BluetoothConnector::startDeviceDiscovery()
 
 	bool success = true;
 	{
-		base::MutexGuard guard(m_mutexDiscover);
 		enableScan(m_deviceDescriptor);
 
 		m_devices = startScan(m_deviceDescriptor, BLE_SCAN_TIMEOUT);

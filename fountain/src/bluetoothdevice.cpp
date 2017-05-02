@@ -1,5 +1,4 @@
 #include "bluetoothdevice.h"
-#include "base/MutexGuard.h"
 
 std::mutex BluetoothDevice::sm_mutexConnect;
 
@@ -53,14 +52,10 @@ void BluetoothDevice::connect()
 	{
 		m_state = Disconnected;
 	}
-	//m_thread = std::thread(createGattConnection, this);
-	//m_thread.detach();
 }
 
 void BluetoothDevice::createGattConnection(BluetoothDevice* device)
 {
-	//base::MutexGuard g(sm_mutexConnect);
-
 	if(device == NULL) {
 		return;
 	}
