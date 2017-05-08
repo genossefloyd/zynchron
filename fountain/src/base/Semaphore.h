@@ -24,7 +24,7 @@ public:
 
 	Semaphore(unsigned long initial_count = 0);  // Initialized as locked.
     void notify();
-    void wait(unsigned int timeout = 0);
+    bool wait(unsigned int timeout = 0);
     bool try_wait();
 };
 

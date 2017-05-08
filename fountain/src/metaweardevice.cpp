@@ -24,6 +24,9 @@
 #include <assert.h>
 #include <string.h>
 
+static const unsigned int TIMEOUT_SINGLE_NOTIFY 	= 250;
+static const unsigned int TIMEOUT_BLE_CONNECTION 	= 3000;
+
 #define PRINT_ARRAY(data, len) for(size_t j = 0; j < len; j++){ printf("%02X", data[j]); } printf("\n");
 
 static const uuid_t METAWARE_SERVICE_UUID = HighLow2Uuid(METAWEAR_SERVICE_NOTIFY_CHAR.service_uuid_high,
@@ -132,6 +135,10 @@ MetaWearDevice::~MetaWearDevice()
 	unbind();
 
     m_mutexNotify.lock();
+    for(size_t i = 0; i < m_messageQueue.size(); i++)
+    {
+    	delete m_messageQueue[i];
+    }
 	m_messageQueue.clear();
 	m_isProcessing = false;
 	m_msgQueueSemaphore.notify();
@@ -170,6 +177,8 @@ void MetaWearDevice::unbind()
 {
     if (m_state >= Pairing)
     {
+    	toogleLED();
+
         m_board->fetchingdata = false;
         mbl_mw_metawearboard_tear_down(m_board);
 
@@ -182,7 +191,7 @@ MetaWearDevice::MblMwMetaWearBoardCustom* MetaWearDevice::mwbc_create(MetaWearDe
     MblMwMetaWearBoardCustom* board = new MblMwMetaWearBoardCustom();
     memcpy(&board->btle_conn, &CONNECTION, sizeof(MblMwBtleConnection));
     board->parent = parent;
-    board->datastreamid = std::rand() & 0xFF;
+    board->datastreamid = parent->m_deviceAddress[0];
     board->fetchingdata = false;
     return board;
 }
@@ -201,27 +210,43 @@ void MetaWearDevice::execute()
     m_isProcessing = true;
 
     Message* newMessage = NULL;
+    unsigned int connectionLost = 0;
 	while(m_isProcessing)
 	{
-		m_msgQueueSemaphore.wait(100);
-
-		m_mutexNotify.lock();
-        if (m_messageQueue.size() > 0)
-        {
-        	printf("events %u\n", m_messageQueue.size());
-            newMessage = m_messageQueue.front();
-            m_messageQueue.pop_front();
-        }
-        m_mutexNotify.unlock();
-            
-        if(newMessage != NULL)
+		if(m_msgQueueSemaphore.wait(TIMEOUT_SINGLE_NOTIFY))
 		{
-        	process_message(newMessage);
+			m_mutexNotify.lock();
+			if (m_messageQueue.size() > 0)
+			{
+				printf("events %u\n", m_messageQueue.size());
+				newMessage = m_messageQueue.front();
+				m_messageQueue.pop_front();
+			}
+			m_mutexNotify.unlock();
 
-        	delete newMessage;
-        	newMessage = NULL;
+			if(newMessage != NULL)
+			{
+				process_message(newMessage);
+
+				delete newMessage;
+				newMessage = NULL;
+			}
+			connectionLost = 0;
+		}
+		else
+		{
+			connectionLost ++;
+		    if(connectionLost >= 20)
+			{
+		    	m_isProcessing = false;
+		    	printf("lost connection\n");
+			}
 		}
 	}
+
+	unbind();
+	disconnect();
+
     printf("stop processing\n");
 }
 
@@ -271,6 +296,7 @@ void MetaWearDevice::process_message(Message* newMessage)
 			mbl_mw_led_stop(m_board);
 		else
 			mbl_mw_led_play(m_board);
+
 		break;
 
 	case FETCH_DATA:
@@ -321,6 +347,7 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
         mbl_mw_datasignal_subscribe(acc_signal, acc_handler);
 
         board->parent->m_state = Paired;
+        board->parent->toogleLED();
     }
     else
     {

@@ -41,6 +41,7 @@ void BluetoothDevice::disconnect()
 	{
 		gattlib_disconnect(m_connection);
 		m_connection = NULL;
+		m_state = Disconnected;
 	}
 }
 

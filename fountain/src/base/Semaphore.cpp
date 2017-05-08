@@ -23,7 +23,7 @@ void Semaphore::notify() {
 	m_condvar.notify_one();
 }
 
-void Semaphore::wait(unsigned int timeout) {
+bool Semaphore::wait(unsigned int timeout) {
 	std::unique_lock<decltype(m_mutex_)> lock(m_mutex_);
 	printf("wait start\n");
 
@@ -35,6 +35,8 @@ void Semaphore::wait(unsigned int timeout) {
 	}
 	else
 		printf("wait timeout\n");
+
+	return success;
 }
 
 bool Semaphore::try_wait() {
