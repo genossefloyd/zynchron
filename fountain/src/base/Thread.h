@@ -12,15 +12,16 @@
 
 namespace base {
 
+//Abstract base class for simple thread implementation using c++11 std::thread class
 class Thread {
 public:
 	Thread();
 	virtual ~Thread();
 
-	void start();
-	void join();
+	void start(); //start thread
+	void join(); //wait for thread completion and free its resources
 
-	bool isRunning();
+	bool isRunning(); //returns true if thread is still active and running
 
 	static void sleep(int s); //sleep seconds
 	static void sleepMs(int ms); //sleep milli seconds
@@ -31,6 +32,7 @@ private:
 	static void executer(Thread*);
 
 protected:
+	//overwrite this method with implementation for this thread
 	virtual void execute() = 0;
 };
 

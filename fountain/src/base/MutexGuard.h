@@ -12,10 +12,11 @@
 
 namespace base {
 
+//Utility Class for mutex class to automatically unlock a given mutex when leaving a context
 class MutexGuard {
 public:
-	MutexGuard(std::mutex& mutex);
-	virtual ~MutexGuard();
+	MutexGuard(std::mutex& mutex);//locks given mutex
+	virtual ~MutexGuard(); //unlocks given mutex
 
 private:
 	std::mutex& m_mutex;

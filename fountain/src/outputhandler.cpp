@@ -6,6 +6,13 @@ OutputHandler::OutputHandler()
 {
 }
 
+OutputHandler::~OutputHandler()
+{
+	stopDummy();
+}
+
+//helper function to interpret a byte array as a floating point number
+//array needs to be 4 bytes long!
 static float toFloat(char* array)
 {
     float result = *(reinterpret_cast<float*>(array));

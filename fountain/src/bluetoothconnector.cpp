@@ -69,6 +69,7 @@ BluetoothConnector::BluetoothConnector()
 
 BluetoothConnector::~BluetoothConnector()
 {
+	//FIXME memory leak, clear device list properly
 	if(m_deviceDescriptor >= 0)
 	{
 		disableScan(m_deviceDescriptor);
@@ -204,6 +205,7 @@ bool BluetoothConnector::startDeviceDiscovery()
 	{
 		enableScan(m_deviceDescriptor);
 
+		//FIXME memory leak, clear current device list properly
 		m_devices = startScan(m_deviceDescriptor, BLE_SCAN_TIMEOUT);
 		if (m_devices.empty()) {
 			fprintf(stderr, "ERROR: Advertisement fail.\n");

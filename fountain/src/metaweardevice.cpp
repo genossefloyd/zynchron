@@ -37,6 +37,7 @@ static const uuid_t METAWARE_CHARACTERISTIC_UUID = HighLow2Uuid(METAWEAR_SERVICE
 
 const MblMwBtleConnection MetaWearDevice::CONNECTION = { MetaWearDevice::write_gatt_char, MetaWearDevice::read_gatt_char };
 
+//convert metawear uuid format to gattlib uuid format
 uuid_t HighLow2Uuid(const uint64_t high, const uint64_t low)
 {
 	char buffer[33];
@@ -73,6 +74,7 @@ static void uuid_to_bt_uuid(uuid_t* uuid, bt_uuid_t* bt_uuid) {
 	}
 }
 
+//convert gattlib uuid format to metawear uuid format
 void Uuid2HighLow(uuid_t uuid, uint64_t &high, uint64_t &low)
 {
 	char buffer[37];
@@ -95,6 +97,7 @@ void Uuid2HighLow(uuid_t uuid, uint64_t &high, uint64_t &low)
 	sscanf(c2.c_str(), "%016" PRIx64, &low);
 }
 
+//request type of accelerometer sensor
 static int32_t check_acc_type(MblMwMetaWearBoard* board)
 {
     auto acc_type = mbl_mw_metawearboard_lookup_module(board, MBL_MW_MODULE_ACCELEROMETER);
@@ -327,6 +330,7 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
     MblMwMetaWearBoardCustom* board = (MblMwMetaWearBoardCustom*)caller;
     std::cout << "Board status: " << status << std::endl;
 
+    //check if initialisation was complete
     if(status != MBL_MW_STATUS_ERROR_TIMEOUT)
     {
         MblMwLedPattern pattern;
@@ -351,6 +355,7 @@ void MetaWearDevice::is_initialized(MblMwMetaWearBoard* caller, int32_t status)
     }
     else
     {
+    	//initialisation took to much time - reset connection
     	board->parent->unbind();
     }
 }

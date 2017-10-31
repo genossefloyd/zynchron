@@ -4,6 +4,8 @@
 namespace msg
 {
 
+//enum with data type identifier
+//it is used as data tag for output classes to identify the type/origin of send data
 enum DataType
 {
     DEVICENAME = 0x01,

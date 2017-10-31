@@ -7,6 +7,7 @@
 #include <thread>
 #include <list>
 
+//class to scan and find available bluetooth devices
 class BluetoothConnector
 {
 public:
@@ -16,7 +17,11 @@ public:
     explicit BluetoothConnector();
     ~BluetoothConnector();
 
+    //start a new scan for available bluetooth devices
+    //returns true if scan was finished without error and if at least one device was founds
     bool startDeviceDiscovery();
+
+    //return a list of all found bluetooth devices
     DeviceList getDevices();
 
 private:
